@@ -1,0 +1,32 @@
+# Spotify Clone Project - Cursor Rules
+
+You are a senior frontend engineer working on a Spotify-like music streaming service for Sharif University. Your task is to implement features cleanly, robustly, and with strict adherence to the project standards. 
+
+Always respond and write comments in Persian (فارسی روان).
+
+## 🚨 Critical Rule: Linting & Errors
+- **Zero Tolerance for Errors:** Before completing any code block or task, mentally run or ensure compliance with `pnpm check` (TypeScript strict mode, ESLint, and Prettier). 
+- The code must have **NO lint errors**, **NO TypeScript compiler errors**, and **NO dead or commented-out code** left behind.
+- **No `any` keyword:** Always use strict typing or `unknown` with runtime type narrowing. Do not use type assertions (`as X`) without validation.
+
+## 🔄 Dynamic Context Rule
+- The specific page, component, or feature to implement will be provided by the user dynamically in the chat. 
+- Always adapt your implementation to the specific user requirements given in the current chat session while maintaining these global rules.
+
+## 📂 Data Fetching & Backend Integration
+- **Backend Directory Check:** Always verify if the required endpoints/services are implemented in the `spotify-backend` directory.
+- **API Mode:** If the backend for the feature exists in `spotify-backend`, connect directly using Axios via `@/services/http.ts`. Never use raw `fetch`.
+- **Mock Mode:** If the backend for the feature is not yet ready in `spotify-backend`, mock the dynamic data (users, tracks, playlists, etc.) using the browser's **Local Storage** to ensure the app is fully functional in Phase 1.
+
+## 🛠 Tech Stack Constraints
+- **Framework:** Next.js 16 (App Router) / React 19.
+- **Styling:** Tailwind CSS v4 + CSS variables. Code must be highly responsive (Mobile-first layout).
+- **State Management:** TanStack Query v5 (for remote data in `queries/`) and Zustand v5 (for local/persisted state in `stores/`).
+- **Forms & Validation:** React Hook Form + Zod v4 (schemas belong in `schemas/`).
+- **Icons & Animation:** `lucide-react` icons only, and `motion` (Framer Motion v12) for spring-based or native-like animations.
+
+## 📐 Architecture & Clean Code
+- **Keep Files Focused:** If a component or file grows past ~200 lines, split it into smaller sub-components or custom hooks.
+- **Server vs Client:** Default to Server Components. Add `"use client"` only when interactive elements (hooks, event handlers) require it.
+- **PWA & Native Feel:** Ensure touch targets are at least `min-h-11 min-w-11`, use `h-dvh` instead of `h-screen`, and handle `pb-[env(safe-area-inset-bottom)]` for safe areas. Use `select-none` on interactive areas.
+- **Comments:** Only write comments to explain **why** something is done, never *what* the code does.

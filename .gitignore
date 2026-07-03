@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# nested duplicate backend (use ../spotify-backend instead)
+/spotify-backend

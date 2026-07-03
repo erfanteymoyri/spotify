@@ -26,6 +26,7 @@ interface PlayerState {
   setRepeatMode: (mode: RepeatMode) => void;
   toggleShuffle: () => void;
   toggleExpanded: () => void;
+  seekTo: (time: number) => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -118,4 +119,5 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setRepeatMode: (mode) => set({ repeatMode: mode }),
   toggleShuffle: () => set((s) => ({ isShuffle: !s.isShuffle })),
   toggleExpanded: () => set((s) => ({ isExpanded: !s.isExpanded })),
+  seekTo: () => {},
 }));

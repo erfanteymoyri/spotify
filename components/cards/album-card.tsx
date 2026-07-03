@@ -5,6 +5,8 @@ import Image from "next/image";
 import { Play } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { routes } from "@/config/site";
+import { getAlbumTracks } from "@/lib/mock-data";
+import { usePlayerStore } from "@/stores/player-store";
 import type { Album } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +17,7 @@ interface AlbumCardProps {
 
 export function AlbumCard({ album, className }: AlbumCardProps) {
   const { t } = useTranslation();
+  const playTrack = usePlayerStore((s) => s.playTrack);
 
   return (
     <div
@@ -36,7 +39,10 @@ export function AlbumCard({ album, className }: AlbumCardProps) {
             type="button"
             onClick={(e) => {
               e.preventDefault();
-              // Future: play the album's first track
+              const tracks = getAlbumTracks(album.id);
+              if (tracks.length > 0) {
+                playTrack(tracks[0], tracks);
+              }
             }}
             className="absolute bottom-2 left-2 flex size-12 translate-y-2 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-xl transition-all group-hover:translate-y-0 group-hover:opacity-100"
             aria-label={t("player.playAlbum")}

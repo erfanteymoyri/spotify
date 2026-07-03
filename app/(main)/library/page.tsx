@@ -18,17 +18,35 @@ export default function LibraryPage() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
     setLoading(true);
+  };
+
+  const handleSortChange = (value: "listeners" | "date") => {
+    setSort(value);
+    setLoading(true);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
     Promise.all([
       musicService.searchTracks(query, sort),
       musicService.getAlbums(),
     ])
       .then(([trackResult, albumList]) => {
+        if (cancelled) return;
         setTracks(trackResult.data);
         setAlbums(albumList);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [query, sort]);
 
   return (
@@ -44,13 +62,13 @@ export default function LibraryPage() {
           <Input
             placeholder={t("library.searchPlaceholder")}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             className="pr-10"
           />
         </div>
         <select
           value={sort}
-          onChange={(e) => setSort(e.target.value as "listeners" | "date")}
+          onChange={(e) => handleSortChange(e.target.value as "listeners" | "date")}
           className="h-10 rounded-lg border border-input bg-background/50 px-3 text-sm"
         >
           <option value="listeners">{t("library.sortListeners")}</option>

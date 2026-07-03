@@ -29,6 +29,10 @@ export const registerArtistSchema = z.object({
   sampleWorks: z.string().min(10, "Describe your sample works"),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+});
+
 export const playlistSchema = z.object({
   name: z.string().min(1, "Playlist name is required").max(100),
 });
@@ -36,4 +40,5 @@ export const playlistSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterListenerInput = z.infer<typeof registerListenerSchema>;
 export type RegisterArtistInput = z.infer<typeof registerArtistSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type PlaylistInput = z.infer<typeof playlistSchema>;

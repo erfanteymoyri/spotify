@@ -19,7 +19,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import { routes } from "@/config/site";
 import { formatDuration } from "@/lib/format";
 import { usePlayerStore } from "@/stores/player-store";
-import { useAudioPlayer } from "@/hooks/use-audio-player";
 import { useIsMobile } from "@/hooks/use-media-query";
 import { Slider } from "@/ui/slider";
 import { Button } from "@/ui/button";
@@ -28,7 +27,6 @@ import { cn } from "@/lib/utils";
 export function MusicPlayer() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
-  const { seek } = useAudioPlayer();
   const {
     currentTrack,
     isPlaying,
@@ -47,6 +45,7 @@ export function MusicPlayer() {
     setRepeatMode,
     toggleShuffle,
     toggleExpanded,
+    seekTo,
   } = usePlayerStore();
 
   if (!currentTrack) {
@@ -109,7 +108,7 @@ export function MusicPlayer() {
             onTogglePlay={togglePlay}
             onPrevious={previous}
             onNext={next}
-            onSeek={seek}
+            onSeek={seekTo}
             onVolumeChange={setVolume}
             onToggleMute={toggleMute}
             onCycleRepeat={cycleRepeat}
@@ -128,7 +127,7 @@ export function MusicPlayer() {
           min={0}
           max={duration || 100}
           value={progress}
-          onChange={(e) => seek(Number(e.target.value))}
+          onChange={(e) => seekTo(Number(e.target.value))}
           className="h-1"
         />
       </div>
@@ -166,7 +165,7 @@ export function MusicPlayer() {
           onTogglePlay={togglePlay}
           onPrevious={previous}
           onNext={next}
-          onSeek={seek}
+          onSeek={seekTo}
           onVolumeChange={setVolume}
           onToggleMute={toggleMute}
           onCycleRepeat={cycleRepeat}

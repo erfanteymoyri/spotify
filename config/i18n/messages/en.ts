@@ -46,12 +46,21 @@ export const messages = {
   },
   home: {
     greeting: "Hello, {name}",
+    guest: "User",
     subtitle: "What do you want to listen to?",
     recentlyPlayed: "Recently played",
     latestAlbums: "Latest albums",
     popularTracks: "Popular tracks",
-    earlyAccess: "Early access",
+    earlyAccess: "Early access to new releases",
     earlyAccessSubtitle: "Gold subscription exclusive",
+    emptyPlaylistsTitle: "No recently played playlists",
+    emptyPlaylistsDescription: "Your recently played playlists will appear here.",
+    emptyAlbumsTitle: "No new albums",
+    emptyAlbumsDescription: "New albums will show up in this section soon.",
+    emptyTracksTitle: "No popular tracks found",
+    emptyTracksDescription: "Popular tracks will appear here once people start listening.",
+    emptyEarlyAccessTitle: "No early access releases",
+    emptyEarlyAccessDescription: "Exclusive gold-tier releases will appear here soon.",
   },
   library: {
     title: "Albums & Singles",
@@ -108,8 +117,15 @@ export const messages = {
   },
   auth: {
     loginTitle: "Log in to your account",
-    loginFailed: "Login failed",
+    loginFailed: "Invalid email or password",
+    registerFailed: "Registration failed",
+    emailExists: "This email is already registered",
+    emailNotFound: "No account found with this email",
     forgotPassword: "Forgot password",
+    forgotPasswordHint: "Enter your account email and we will send a recovery link.",
+    sendResetLink: "Send recovery link",
+    resetEmailSent: "If an account exists, a recovery link has been sent to your email.",
+    resetFailed: "Failed to send recovery link",
     noAccount: "Don't have an account?",
     hasAccount: "Already have an account?",
     listener: "Listener",
@@ -120,14 +136,20 @@ export const messages = {
     female: "Female",
     other: "Other",
     privacyPolicy: "Privacy policy",
+    privacyPolicyTitle: "Privacy policy",
+    privacyPolicyBody1:
+      "Your personal data is used only to provide music streaming, manage your account, and improve your experience.",
+    privacyPolicyBody2:
+      "Passwords and sensitive data are stored securely and are not shared with third parties without your consent.",
+    privacyPolicyBody3:
+      "You can request account deletion or data correction at any time from the settings page.",
+    privacyPolicyClose: "Got it",
     acceptPrivacy: "I accept the",
     submitRequest: "Submit request",
     stageName: "Stage name",
     sampleWorks: "Sample works and description",
     artistRequestPending:
       "Your request has been submitted and is pending approval.",
-    forgotPasswordHint:
-      "POST /auth/forgot-password — recovery form will be completed in a later phase.",
     backToLogin: "Back to login",
   },
   artist: {

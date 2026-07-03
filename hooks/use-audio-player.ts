@@ -6,7 +6,7 @@ import { musicService } from "@/services/music.service";
 
 /**
  * Audio player hook — manages the HTML audio element.
- * After backend integration, recordStream is called to track streams and daily limits.
+ * Mount once via AppProviders; MusicPlayer reads seekTo from the store.
  */
 export function useAudioPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -15,10 +15,8 @@ export function useAudioPlayer() {
     isPlaying,
     volume,
     isMuted,
-    progress,
     setProgress,
     setDuration,
-    next,
   } = usePlayerStore();
 
   useEffect(() => {
@@ -27,14 +25,21 @@ export function useAudioPlayer() {
     }
     const audio = audioRef.current;
 
+    usePlayerStore.setState({
+      seekTo: (time: number) => {
+        audio.currentTime = time;
+        setProgress(time);
+      },
+    });
+
     const onTimeUpdate = () => setProgress(audio.currentTime);
     const onLoadedMetadata = () => setDuration(audio.duration);
     const onEnded = () => {
-      if (currentTrack) {
-        // POST /tracks/:id/stream — record stream on backend
-        musicService.recordStream(currentTrack.id, audio.duration);
+      const track = usePlayerStore.getState().currentTrack;
+      if (track) {
+        musicService.recordStream(track.id, audio.duration);
       }
-      next();
+      usePlayerStore.getState().next();
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
@@ -45,8 +50,9 @@ export function useAudioPlayer() {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       audio.removeEventListener("ended", onEnded);
+      usePlayerStore.setState({ seekTo: () => {} });
     };
-  }, [currentTrack, next, setProgress, setDuration]);
+  }, [setProgress, setDuration]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -54,35 +60,22 @@ export function useAudioPlayer() {
 
     audio.src = currentTrack.audioUrl;
     audio.load();
-    if (isPlaying) {
-      audio.play().catch(() => {});
-    }
   }, [currentTrack]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !currentTrack) return;
 
     if (isPlaying) {
       audio.play().catch(() => {});
     } else {
       audio.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, currentTrack]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.volume = isMuted ? 0 : volume;
   }, [volume, isMuted]);
-
-  const seek = (time: number) => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.currentTime = time;
-      setProgress(time);
-    }
-  };
-
-  return { seek, progress };
 }

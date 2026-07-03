@@ -1,5 +1,9 @@
-import { mockCurrentUser } from "@/lib/mock-data";
-import type { User } from "@/types";
+import { apiClient } from "@/api/client";
+import { endpoints } from "@/api/endpoints";
+import { backendCapabilities } from "@/config/backend";
+import { authMockStorage } from "@/lib/auth-mock-storage";
+import { delay, shouldUseBackend } from "@/lib/service-utils";
+import type { Gender, User } from "@/types";
 
 export interface LoginResponse {
   user: User;
@@ -7,109 +11,98 @@ export interface LoginResponse {
 }
 
 export const authService = {
-  /**
-   * POST /auth/login
-   * Body: { email: string, password: string }
-   * Response: { user: User, token: string }
-   * Redirect based on user.role:
-   *   listener/artist → /
-   *   support/admin → /admin
-   */
   async login(email: string, password: string): Promise<LoginResponse> {
-    // ── Real API (remove MOCK and enable when backend is ready) ──
-    // return apiClient<LoginResponse>(endpoints.auth.login, {
-    //   method: "POST",
-    //   body: { email, password },
-    // });
+    if (shouldUseBackend(backendCapabilities.auth.login)) {
+      return apiClient<LoginResponse>(endpoints.auth.login, {
+        method: "POST",
+        body: { email, password },
+      });
+    }
 
-    // ── MOCK ──
-    void email;
-    void password;
     await delay(400);
-    return {
-      user: mockCurrentUser,
-      token: "mock-jwt-token",
-    };
+    const user = authMockStorage.validateLogin(email, password);
+    if (!user) throw new Error("INVALID_CREDENTIALS");
+    return { user, token: `mock-token-${user.id}` };
   },
 
-  /**
-   * POST /auth/register
-   * Body: RegisterListenerInput
-   * Response: { user: User, token: string }
-   */
   async registerListener(data: {
     displayName: string;
     email: string;
     password: string;
     birthDate: string;
-    gender: string;
+    gender: Gender;
   }): Promise<LoginResponse> {
-    // return apiClient<LoginResponse>(endpoints.auth.register, {
-    //   method: "POST",
-    //   body: data,
-    // });
+    if (shouldUseBackend(backendCapabilities.auth.registerListener)) {
+      return apiClient<LoginResponse>(endpoints.auth.register, {
+        method: "POST",
+        body: data,
+      });
+    }
 
-    void data;
     await delay(500);
-    return {
-      user: { ...mockCurrentUser, displayName: data.displayName, email: data.email },
-      token: "mock-jwt-token",
-    };
+    const user = authMockStorage.registerListener(data);
+    return { user, token: `mock-token-${user.id}` };
   },
 
-  /**
-   * POST /auth/register/artist
-   * Body: { email, password, stageName, sampleWorks }
-   * Response: { message: string, status: "pending" }
-   */
   async registerArtist(data: {
     email: string;
     password: string;
     stageName: string;
     sampleWorks: string;
   }): Promise<{ message: string; status: "pending" }> {
-    // return apiClient(endpoints.auth.registerArtist, {
-    //   method: "POST",
-    //   body: data,
-    // });
+    if (shouldUseBackend(backendCapabilities.auth.registerArtist)) {
+      return apiClient(endpoints.auth.registerArtist, {
+        method: "POST",
+        body: data,
+      });
+    }
 
-    void data;
     await delay(500);
-    return {
-      message: "Your request has been submitted and is pending approval.",
-      status: "pending",
-    };
+    authMockStorage.registerArtist(data);
+    return { message: "pending", status: "pending" };
   },
 
-  /**
-   * GET /auth/me
-   * Header: Authorization: Bearer {token}
-   */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    if (shouldUseBackend(backendCapabilities.auth.forgotPassword)) {
+      return apiClient(endpoints.auth.forgotPassword, {
+        method: "POST",
+        body: { email },
+      });
+    }
+
+    await delay(400);
+    const exists = authMockStorage.requestPasswordReset(email);
+    if (!exists) throw new Error("EMAIL_NOT_FOUND");
+    return { message: "sent" };
+  },
+
   async getMe(token: string): Promise<User> {
-    // return apiClient<User>(endpoints.auth.me, {
-    //   method: "GET",
-    //   token,
-    // });
+    if (shouldUseBackend(backendCapabilities.auth.me)) {
+      return apiClient<User>(endpoints.auth.me, {
+        method: "GET",
+        token,
+      });
+    }
 
-    void token;
     await delay(200);
-    return mockCurrentUser;
+    const userId = token.replace("mock-token-", "");
+    const stored = authMockStorage.findById(userId);
+    if (!stored) throw new Error("UNAUTHORIZED");
+    const { password: _password, ...user } = stored;
+    void _password;
+    return user;
   },
 
-  /**
-   * POST /auth/logout
-   */
   async logout(token: string): Promise<void> {
-    // return apiClient<void>(endpoints.auth.logout, {
-    //   method: "POST",
-    //   token,
-    // });
+    if (shouldUseBackend(backendCapabilities.auth.logout)) {
+      await apiClient<void>(endpoints.auth.logout, {
+        method: "POST",
+        token,
+      });
+      return;
+    }
 
     void token;
     await delay(200);
   },
 };
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}

@@ -1,0 +1,159 @@
+import type { ArtistProfile, Gender, User, UserRole } from "@/types";
+
+const USERS_KEY = "spotify-mock-users";
+const ARTIST_REQUESTS_KEY = "spotify-artist-requests";
+
+interface StoredUser extends User {
+  password: string;
+}
+
+export interface ArtistRegistrationRequest {
+  id: string;
+  email: string;
+  password: string;
+  stageName: string;
+  sampleWorks: string;
+  status: ArtistProfile["status"];
+  createdAt: string;
+}
+
+function readJson<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson<T>(key: string, value: T): void {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function createId(prefix: string): string {
+  return `${prefix}-${crypto.randomUUID()}`;
+}
+
+function usernameFromEmail(email: string): string {
+  const base = email.split("@")[0]?.replace(/[^a-zA-Z0-9_]/g, "_") || "user";
+  return `${base}_${Math.floor(Math.random() * 9000 + 1000)}`;
+}
+
+function seedUsers(): StoredUser[] {
+  const now = new Date().toISOString();
+  const base = (role: UserRole, email: string, displayName: string): StoredUser => ({
+    id: createId("user"),
+    username: email.split("@")[0] ?? "user",
+    displayName,
+    email,
+    password: "demo123456",
+    role,
+    avatarUrl: null,
+    subscription: role === "admin" ? "gold" : role === "artist" ? "silver" : "free",
+    followersCount: 0,
+    followingCount: 0,
+    dailyStreamsCount: 0,
+    createdAt: now,
+  });
+
+  return [
+    base("listener", "listener@demo.com", "شنونده نمونه"),
+    base("artist", "artist@demo.com", "هنرمند نمونه"),
+    base("support", "support@demo.com", "پشتیبان نمونه"),
+    base("admin", "admin@demo.com", "مدیر سامانه"),
+  ];
+}
+
+function getUsers(): StoredUser[] {
+  const users = readJson<StoredUser[] | null>(USERS_KEY, null);
+  if (!users?.length) {
+    const seeded = seedUsers();
+    writeJson(USERS_KEY, seeded);
+    return seeded;
+  }
+  return users;
+}
+
+function toPublicUser(user: StoredUser): User {
+  const { password: _password, ...publicUser } = user;
+  void _password;
+  return publicUser;
+}
+
+export const authMockStorage = {
+  findByEmail(email: string): StoredUser | undefined {
+    return getUsers().find((u) => u.email.toLowerCase() === email.toLowerCase());
+  },
+
+  findById(id: string): StoredUser | undefined {
+    return getUsers().find((u) => u.id === id);
+  },
+
+  validateLogin(email: string, password: string): User | null {
+    const user = this.findByEmail(email);
+    if (!user || user.password !== password) return null;
+    return toPublicUser(user);
+  },
+
+  registerListener(data: {
+    displayName: string;
+    email: string;
+    password: string;
+    birthDate: string;
+    gender: Gender;
+  }): User {
+    const users = getUsers();
+    if (users.some((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
+      throw new Error("EMAIL_EXISTS");
+    }
+
+    const user: StoredUser = {
+      id: createId("user"),
+      username: usernameFromEmail(data.email),
+      displayName: data.displayName.trim(),
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+      role: "listener",
+      avatarUrl: null,
+      subscription: "free",
+      followersCount: 0,
+      followingCount: 0,
+      dailyStreamsCount: 0,
+      birthDate: data.birthDate,
+      gender: data.gender,
+      createdAt: new Date().toISOString(),
+    };
+
+    writeJson(USERS_KEY, [...users, user]);
+    return toPublicUser(user);
+  },
+
+  registerArtist(data: {
+    email: string;
+    password: string;
+    stageName: string;
+    sampleWorks: string;
+  }): ArtistRegistrationRequest {
+    const requests = readJson<ArtistRegistrationRequest[]>(ARTIST_REQUESTS_KEY, []);
+    const request: ArtistRegistrationRequest = {
+      id: createId("artist-req"),
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+      stageName: data.stageName.trim(),
+      sampleWorks: data.sampleWorks.trim(),
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    writeJson(ARTIST_REQUESTS_KEY, [...requests, request]);
+    return request;
+  },
+
+  requestPasswordReset(email: string): boolean {
+    return Boolean(this.findByEmail(email));
+  },
+
+  getArtistRequests(): ArtistRegistrationRequest[] {
+    return readJson<ArtistRegistrationRequest[]>(ARTIST_REQUESTS_KEY, []);
+  },
+};

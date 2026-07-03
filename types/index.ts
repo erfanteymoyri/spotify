@@ -127,3 +127,85 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
 }
+
+export type ReleaseType = "single" | "album";
+
+/** A published track owned by an artist, enriched with per-work analytics */
+export interface ArtistWork extends Track {
+  releaseType: ReleaseType;
+  collaborators: string[];
+  revenue: number;
+}
+
+/** Payload the artist upload form produces before the backend assigns ids */
+export interface ArtistWorkInput {
+  title: string;
+  releaseType: ReleaseType;
+  genre: string;
+  releaseYear: number;
+  collaborators: string[];
+  lyrics: string;
+  coverUrl: string;
+  audioUrl: string;
+}
+
+export type TicketStatus = "open" | "answered" | "closed";
+
+export type TicketSenderRole = "user" | "support";
+
+export interface TicketMessage {
+  id: string;
+  senderRole: TicketSenderRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  userName: string;
+  subject: string;
+  status: TicketStatus;
+  createdAt: string;
+  messages: TicketMessage[];
+}
+
+/** Public view of a pending artist verification request (no password) */
+export interface ArtistRequest {
+  id: string;
+  email: string;
+  stageName: string;
+  sampleWorks: string;
+  status: ArtistStatus;
+  createdAt: string;
+}
+
+export type PayoutStatus = "pending" | "paid";
+
+export interface ArtistPayout {
+  id: string;
+  artistId: string;
+  artistName: string;
+  uniqueListeners: number;
+  totalStreams: number;
+  amount: number;
+  status: PayoutStatus;
+  month: string;
+}
+
+export interface SubscriptionPricing {
+  silver: number;
+  gold: number;
+}
+
+export interface TierDistribution {
+  tier: SubscriptionTier;
+  count: number;
+}
+
+export interface AdminStats {
+  tierDistribution: TierDistribution[];
+  monthlyRevenue: number;
+  totalUsers: number;
+  totalArtists: number;
+}

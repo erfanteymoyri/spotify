@@ -10,32 +10,28 @@ import {
   getPlaylistById,
   getPlaylistTracks,
 } from "@/lib/mock-data";
+import { apiClient } from "@/api/client";
+import { endpoints } from "@/api/endpoints";
+import { backendCapabilities } from "@/config/backend";
+import { delay, shouldUseBackend } from "@/lib/service-utils";
 import type { Album, HomeFeed, PaginatedResponse, Track } from "@/types";
 
 export const musicService = {
-  /**
-   * GET /home
-   * Response: HomeFeed
-   * Includes: recentlyPlayedPlaylists, latestAlbums, popularTracks
-   * For gold tier: earlyAccessTracks
-   */
+  /** GET /home — recentlyPlayedPlaylists, latestAlbums, popularTracks */
   async getHomeFeed(): Promise<HomeFeed> {
-    // return apiClient<HomeFeed>(endpoints.home.feed, { method: "GET", token });
+    if (shouldUseBackend(backendCapabilities.home.feed)) {
+      return apiClient<HomeFeed>(endpoints.home.feed, { method: "GET" });
+    }
 
     await delay(300);
     return mockHomeFeed;
   },
 
-  /**
-   * GET /tracks/search?q=&sort=listeners|date
-   * Response: PaginatedResponse<Track>
-   */
+  /** GET /tracks/search?q=&sort=listeners|date */
   async searchTracks(
     query: string,
     sort: "listeners" | "date" = "listeners",
   ): Promise<PaginatedResponse<Track>> {
-    // return apiClient(endpoints.tracks.search + `?q=${query}&sort=${sort}`, { method: "GET", token });
-
     await delay(300);
     const filtered = mockTracks.filter(
       (t) =>
@@ -52,47 +48,30 @@ export const musicService = {
     return { data: sorted, total: sorted.length, page: 1, pageSize: 20 };
   },
 
-  /**
-   * GET /albums
-   */
+  /** GET /albums */
   async getAlbums(): Promise<Album[]> {
-    // return apiClient<Album[]>(endpoints.albums.list, { method: "GET", token });
-
     await delay(200);
     return mockAlbums;
   },
 
-  /**
-   * GET /albums/:id
-   */
+  /** GET /albums/:id */
   async getAlbum(id: string) {
-    // return apiClient(endpoints.albums.byId(id), { method: "GET", token });
-
     await delay(200);
     const album = getAlbumById(id);
     if (!album) throw new Error("Album not found");
     return { ...album, tracks: getAlbumTracks(id) };
   },
 
-  /**
-   * GET /tracks/:id
-   */
+  /** GET /tracks/:id */
   async getTrack(id: string): Promise<Track> {
-    // return apiClient<Track>(endpoints.tracks.byId(id), { method: "GET", token });
-
     await delay(200);
     const track = getTrackById(id);
     if (!track) throw new Error("Track not found");
     return track;
   },
 
-  /**
-   * GET /artists/:id
-   * Response: ArtistProfile + albums[] + singles[]
-   */
+  /** GET /artists/:id — ArtistProfile + albums[] + singles[] */
   async getArtist(id: string) {
-    // return apiClient(endpoints.artists.byId(id), { method: "GET", token });
-
     await delay(200);
     const artist = getArtistById(id);
     if (!artist) throw new Error("Artist not found");
@@ -103,18 +82,8 @@ export const musicService = {
     return { ...artist, albums, singles };
   },
 
-  /**
-   * POST /tracks/:id/stream
-   * Body: { durationPlayed: number }
-   * Backend must enforce daily stream limits (60/100) based on tier
-   */
+  /** POST /tracks/:id/stream — backend enforces daily stream limits by tier */
   async recordStream(trackId: string, durationPlayed: number): Promise<void> {
-    // return apiClient(endpoints.tracks.stream(trackId), {
-    //   method: "POST",
-    //   body: { durationPlayed },
-    //   token,
-    // });
-
     void trackId;
     void durationPlayed;
     await delay(100);
@@ -122,35 +91,22 @@ export const musicService = {
 };
 
 export const playlistService = {
-  /**
-   * GET /playlists
-   */
+  /** GET /playlists */
   async getPlaylists() {
-    // return apiClient(endpoints.playlists.list, { method: "GET", token });
-
     await delay(200);
     return mockPlaylists;
   },
 
-  /**
-   * GET /playlists/:id
-   */
+  /** GET /playlists/:id */
   async getPlaylist(id: string) {
-    // return apiClient(endpoints.playlists.byId(id), { method: "GET", token });
-
     await delay(200);
     const playlist = getPlaylistById(id);
     if (!playlist) throw new Error("Playlist not found");
     return { ...playlist, tracks: getPlaylistTracks(id) };
   },
 
-  /**
-   * POST /playlists — Body: { name: string }
-   * Backend must enforce maxPlaylists based on subscription tier
-   */
+  /** POST /playlists — backend enforces maxPlaylists by subscription tier */
   async createPlaylist(name: string) {
-    // return apiClient(endpoints.playlists.create, { method: "POST", body: { name }, token });
-
     await delay(300);
     return {
       id: `playlist-${Date.now()}`,
@@ -163,22 +119,10 @@ export const playlistService = {
     };
   },
 
-  /**
-   * POST /playlists/:id/tracks — Body: { trackId: string }
-   */
+  /** POST /playlists/:id/tracks */
   async addTrackToPlaylist(playlistId: string, trackId: string) {
-    // return apiClient(endpoints.playlists.addTrack(playlistId), {
-    //   method: "POST",
-    //   body: { trackId },
-    //   token,
-    // });
-
     void playlistId;
     void trackId;
     await delay(200);
   },
 };
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}

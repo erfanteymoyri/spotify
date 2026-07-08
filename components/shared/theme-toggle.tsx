@@ -5,38 +5,49 @@ import { useTranslation } from "@/hooks/use-translation";
 import { Button } from "@/ui/button";
 import { Moon, Sun, Monitor } from "lucide-react";
 
-export function ThemeToggle() {
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { theme, setTheme } = useTheme();
   const { t } = useTranslation();
+
+  const options = [
+    { value: "light", label: t("common.themeLight"), icon: Sun },
+    { value: "dark", label: t("common.themeDark"), icon: Moon },
+    { value: "system", label: t("common.themeSystem"), icon: Monitor },
+  ] as const;
+
+  if (compact) {
+    return (
+      <div className="flex gap-1">
+        {options.map(({ value, label, icon: Icon }) => (
+          <Button
+            key={value}
+            variant={theme === value ? "default" : "ghost"}
+            size="icon-sm"
+            onClick={() => setTheme(value)}
+            aria-label={label}
+          >
+            <Icon className="size-4" />
+          </Button>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">{t("common.theme")}</p>
       <div className="flex gap-2">
-        <Button
-          variant={theme === "light" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setTheme("light")}
-        >
-          <Sun className="size-4" />
-          {t("common.themeLight")}
-        </Button>
-        <Button
-          variant={theme === "dark" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setTheme("dark")}
-        >
-          <Moon className="size-4" />
-          {t("common.themeDark")}
-        </Button>
-        <Button
-          variant={theme === "system" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setTheme("system")}
-        >
-          <Monitor className="size-4" />
-          {t("common.themeSystem")}
-        </Button>
+        {options.map(({ value, label, icon: Icon }) => (
+          <Button
+            key={value}
+            variant={theme === value ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTheme(value)}
+          >
+            <Icon className="size-4" />
+            {label}
+          </Button>
+        ))}
       </div>
     </div>
   );

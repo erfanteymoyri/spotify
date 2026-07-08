@@ -2,20 +2,45 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Library, ListMusic, User } from "lucide-react";
+import {
+  Home,
+  Library,
+  ListMusic,
+  User,
+  Music,
+  LayoutDashboard,
+} from "lucide-react";
 import { routes } from "@/config/site";
+import { useAuth } from "@/contexts/auth-context";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const { t } = useTranslation();
+
+  const roleItem =
+    user?.role === "artist"
+      ? {
+          href: routes.artistDashboard,
+          icon: Music,
+          label: t("nav.artistDashboard"),
+        }
+      : user?.role === "admin" || user?.role === "support"
+        ? {
+            href: routes.adminDashboard,
+            icon: LayoutDashboard,
+            label: t("nav.adminDashboard"),
+          }
+        : null;
 
   const items = [
     { href: routes.home, icon: Home, label: t("nav.home") },
     { href: routes.library, icon: Library, label: t("nav.libraryShort") },
     { href: routes.playlists, icon: ListMusic, label: t("nav.playlistShort") },
     { href: routes.profile, icon: User, label: t("nav.profile") },
+    ...(roleItem ? [roleItem] : []),
   ];
 
   return (

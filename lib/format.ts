@@ -10,18 +10,11 @@ export function formatNumber(num: number, locale = "fa-IR"): string {
   return num.toLocaleString(locale);
 }
 
-const roleKeys: Record<string, string> = {
-  listener: "roles.listener",
-  artist: "roles.artist",
-  support: "roles.support",
-  admin: "roles.admin",
-};
-
-/** User role label via translation function */
-export function getRoleLabel(
-  role: string,
-  t: (key: string) => string,
-): string {
-  const key = roleKeys[role];
-  return key ? t(key) : role;
+/** Format an ISO date string as a short localized date */
+export function formatDate(iso: string, locale = "fa-IR"): string {
+  return new Date(iso).toLocaleDateString(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }

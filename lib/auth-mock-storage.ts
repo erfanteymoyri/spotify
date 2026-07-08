@@ -1,4 +1,10 @@
-import type { ArtistProfile, Gender, User, UserRole } from "@/types";
+import type {
+  ArtistProfile,
+  ArtistRequest,
+  Gender,
+  User,
+  UserRole,
+} from "@/types";
 
 const USERS_KEY = "spotify-mock-users";
 const ARTIST_REQUESTS_KEY = "spotify-artist-requests";
@@ -90,6 +96,10 @@ export const authMockStorage = {
     return getUsers().find((u) => u.id === id);
   },
 
+  getAllUsers(): User[] {
+    return getUsers().map(toPublicUser);
+  },
+
   validateLogin(email: string, password: string): User | null {
     const user = this.findByEmail(email);
     if (!user || user.password !== password) return null;
@@ -154,6 +164,66 @@ export const authMockStorage = {
   },
 
   getArtistRequests(): ArtistRegistrationRequest[] {
-    return readJson<ArtistRegistrationRequest[]>(ARTIST_REQUESTS_KEY, []);
+    const stored = readJson<ArtistRegistrationRequest[] | null>(
+      ARTIST_REQUESTS_KEY,
+      null,
+    );
+    if (!stored?.length) {
+      const seeded = seedArtistRequests();
+      writeJson(ARTIST_REQUESTS_KEY, seeded);
+      return seeded;
+    }
+    return stored;
+  },
+
+  /** Admin/support view — passwords stripped */
+  getPublicArtistRequests(): ArtistRequest[] {
+    return this.getArtistRequests().map(({ password: _password, ...req }) => {
+      void _password;
+      return req;
+    });
+  },
+
+  reviewArtistRequest(id: string, action: "approve" | "reject"): void {
+    const requests = this.getArtistRequests();
+    const next = requests.map((req) =>
+      req.id === id
+        ? { ...req, status: action === "approve" ? "approved" : "rejected" }
+        : req,
+    );
+    writeJson(ARTIST_REQUESTS_KEY, next);
   },
 };
+
+function seedArtistRequests(): ArtistRegistrationRequest[] {
+  const now = Date.now();
+  const make = (
+    stageName: string,
+    email: string,
+    sampleWorks: string,
+    daysAgo: number,
+  ): ArtistRegistrationRequest => ({
+    id: createId("artist-req"),
+    email,
+    password: "demo123456",
+    stageName,
+    sampleWorks,
+    status: "pending",
+    createdAt: new Date(now - daysAgo * 86_400_000).toISOString(),
+  });
+
+  return [
+    make(
+      "مهدی یراحی",
+      "yarahi@demo.com",
+      "لینک نمونه‌کارها: soundcloud.com/yarahi — سبک پاپ اجتماعی",
+      1,
+    ),
+    make(
+      "زانیار خسروی",
+      "zaniar@demo.com",
+      "چند تک‌آهنگ منتشرشده در سبک پاپ",
+      3,
+    ),
+  ];
+}

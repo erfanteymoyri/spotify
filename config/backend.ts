@@ -10,4 +10,16 @@ export const backendCapabilities = {
   home: {
     feed: false,
   },
+  artist: {
+    works: false,
+    upload: false,
+    analytics: false,
+  },
+  admin: {
+    tickets: false,
+    artistRequests: false,
+    accounting: false,
+    pricing: false,
+    stats: false,
+  },
 } as const;

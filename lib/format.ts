@@ -9,3 +9,12 @@ export function formatDuration(seconds: number): string {
 export function formatNumber(num: number, locale = "fa-IR"): string {
   return num.toLocaleString(locale);
 }
+
+/** Format an ISO date string as a short localized date */
+export function formatDate(iso: string, locale = "fa-IR"): string {
+  return new Date(iso).toLocaleDateString(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}

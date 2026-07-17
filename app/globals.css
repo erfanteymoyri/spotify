@@ -129,8 +129,47 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Soft brand-tinted glow in opposite corners */
+    background-image:
+      radial-gradient(
+        ellipse 70% 45% at 15% -10%,
+        color-mix(in oklch, var(--primary) 9%, transparent),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 55% 40% at 90% 110%,
+        color-mix(in oklch, var(--primary) 6%, transparent),
+        transparent
+      );
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
+  }
+
+  /* Minimal scrollbars — Firefox & Chromium */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 30%, transparent)
+      transparent;
+  }
+  /* Safari fallback */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 30%, transparent);
   }
 }

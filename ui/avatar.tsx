@@ -25,10 +25,17 @@ export function Avatar({ src, alt, size = "md", className }: AvatarProps) {
       )}
     >
       {src ? (
-        <Image src={src} alt={alt} fill className="object-cover" />
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          // Data URLs (mock avatar uploads) bypass the Next.js image optimizer
+          unoptimized={src.startsWith("data:")}
+          className="object-cover"
+        />
       ) : (
         <div className="flex size-full items-center justify-center text-muted-foreground">
-          <User className={size === "lg" ? "size-12" : "size-4"} />
+          <User className="size-1/2" />
         </div>
       )}
     </div>

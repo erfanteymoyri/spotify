@@ -64,13 +64,16 @@ export function ForgotPasswordForm() {
           <Input
             id="reset-email"
             type="email"
+            dir="ltr"
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
-        <p className="text-sm text-muted-foreground">{t("auth.forgotPasswordHint")}</p>
+        <p className="text-sm leading-6 text-muted-foreground">
+          {t("auth.forgotPasswordHint")}
+        </p>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? t("common.loading") : t("auth.sendResetLink")}

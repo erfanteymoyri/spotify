@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
+import { Label } from "@/ui/label";
+import { Textarea } from "@/ui/textarea";
 import { parseApiError } from "@/lib/parse-api-error";
 import { registerArtistSchema } from "@/schemas/auth";
 import { authService } from "@/services/auth.service";
@@ -44,34 +46,56 @@ export function ArtistRegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        type="email"
-        placeholder={t("common.email")}
-        value={form.email}
-        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-        required
-      />
-      <Input
-        type="password"
-        placeholder={t("common.password")}
-        value={form.password}
-        onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-        required
-      />
-      <Input
-        placeholder={t("auth.stageName")}
-        value={form.stageName}
-        onChange={(e) => setForm((f) => ({ ...f, stageName: e.target.value }))}
-        required
-      />
-      <textarea
-        placeholder={t("auth.sampleWorks")}
-        value={form.sampleWorks}
-        onChange={(e) => setForm((f) => ({ ...f, sampleWorks: e.target.value }))}
-        required
-        className="min-h-24 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm"
-      />
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="artist-email">{t("common.email")}</Label>
+          <Input
+            id="artist-email"
+            type="email"
+            dir="ltr"
+            autoComplete="email"
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="artist-password">{t("common.password")}</Label>
+          <Input
+            id="artist-password"
+            type="password"
+            dir="ltr"
+            autoComplete="new-password"
+            value={form.password}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, password: e.target.value }))
+            }
+            required
+          />
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="artist-stage-name">{t("auth.stageName")}</Label>
+        <Input
+          id="artist-stage-name"
+          value={form.stageName}
+          onChange={(e) => setForm((f) => ({ ...f, stageName: e.target.value }))}
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="artist-sample-works">{t("auth.sampleWorks")}</Label>
+        <Textarea
+          id="artist-sample-works"
+          value={form.sampleWorks}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, sampleWorks: e.target.value }))
+          }
+          required
+          rows={3}
+        />
+      </div>
       {message && <p className="text-sm text-primary">{message}</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={loading}>

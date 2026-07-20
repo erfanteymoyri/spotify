@@ -1,3 +1,4 @@
+import { createId, readJson, writeJson } from "@/lib/local-store";
 import type {
   ArtistProfile,
   ArtistRequest,
@@ -21,24 +22,6 @@ export interface ArtistRegistrationRequest {
   sampleWorks: string;
   status: ArtistProfile["status"];
   createdAt: string;
-}
-
-function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson<T>(key: string, value: T): void {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-function createId(prefix: string): string {
-  return `${prefix}-${crypto.randomUUID()}`;
 }
 
 function usernameFromEmail(email: string): string {
@@ -96,8 +79,26 @@ export const authMockStorage = {
     return getUsers().find((u) => u.id === id);
   },
 
+  /** Public (password-free) view of a stored user */
+  getPublicById(id: string): User | undefined {
+    const user = this.findById(id);
+    return user ? toPublicUser(user) : undefined;
+  },
+
   getAllUsers(): User[] {
     return getUsers().map(toPublicUser);
+  },
+
+  /** Patch a stored user (profile edits, follow counts) and return the public view */
+  updateUser(id: string, patch: Partial<Omit<StoredUser, "id">>): User {
+    const users = getUsers();
+    const index = users.findIndex((u) => u.id === id);
+    if (index === -1) throw new Error("USER_NOT_FOUND");
+
+    const updated: StoredUser = { ...users[index], ...patch };
+    users[index] = updated;
+    writeJson(USERS_KEY, users);
+    return toPublicUser(updated);
   },
 
   validateLogin(email: string, password: string): User | null {

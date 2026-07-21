@@ -14,7 +14,8 @@ export const subscriptionLimits: Record<
     canViewStats: false,
   },
   silver: {
-    maxDailyStreams: 100,
+    // Table 1: silver tier has unlimited daily streams (only playlists are capped)
+    maxDailyStreams: null,
     maxPlaylists: 100,
     canUploadAvatar: true,
     canDownload: true,

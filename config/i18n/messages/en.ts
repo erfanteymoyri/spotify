@@ -2,6 +2,7 @@ export const messages = {
   app: {
     name: "Spotify",
     description: "Music streaming service",
+    tagline: "Stream your music, wherever you are",
   },
   nav: {
     home: "Home",
@@ -24,6 +25,7 @@ export const messages = {
     delete: "Delete",
     view: "View",
     follow: "Follow",
+    unfollow: "Unfollow",
     tracks: "tracks",
     track: "track",
     albums: "Albums",
@@ -104,6 +106,12 @@ export const messages = {
     accountInfo: "Account info",
     username: "Username",
     birthDate: "Birth date",
+    gender: "Gender",
+    changeAvatar: "Change profile picture",
+    removeAvatar: "Remove picture",
+    avatarTooLarge: "Image must be smaller than 2MB",
+    avatarInvalidType: "Selected file must be an image",
+    updateFailed: "Failed to update profile",
     avatarUpgradeHint:
       "Upgrade your subscription to change your profile picture.",
   },
@@ -129,6 +137,8 @@ export const messages = {
     selectTrack: "Select a track to start playing",
     playAlbum: "Play album",
     playTrack: "Play {title}",
+    close: "Close player",
+    expand: "Full screen",
   },
   auth: {
     loginTitle: "Log in to your account",
@@ -285,6 +295,7 @@ export const messages = {
     trackNotFound: "Track not found",
     artistNotFound: "Artist not found",
     playlistNotFound: "Playlist not found",
+    userNotFound: "User not found",
   },
 } as const;
 

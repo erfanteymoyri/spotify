@@ -7,6 +7,10 @@ export const backendCapabilities = {
     me: false,
     logout: false,
   },
+  users: {
+    profile: false,
+    follow: false,
+  },
   home: {
     feed: false,
   },

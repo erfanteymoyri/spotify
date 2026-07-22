@@ -51,6 +51,17 @@ export const userService = {
     return authMockStorage.updateUser(userId, payload);
   },
 
+  /** DELETE /users/me — permanently delete the account (settings page) */
+  async deleteAccount(userId: string): Promise<void> {
+    if (shouldUseBackend(backendCapabilities.users.profile)) {
+      await apiClient<void>(endpoints.users.deleteMe, { method: "DELETE" });
+      return;
+    }
+
+    await delay(300);
+    authMockStorage.deleteUser(userId);
+  },
+
   async isFollowing(currentUserId: string, targetId: string): Promise<boolean> {
     await delay(100);
     return followStorage.isFollowing(currentUserId, targetId);

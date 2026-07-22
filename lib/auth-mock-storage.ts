@@ -55,13 +55,18 @@ function seedUsers(): StoredUser[] {
 }
 
 function getUsers(): StoredUser[] {
-  const users = readJson<StoredUser[] | null>(USERS_KEY, null);
-  if (!users?.length) {
-    const seeded = seedUsers();
-    writeJson(USERS_KEY, seeded);
-    return seeded;
-  }
-  return users;
+  const stored = readJson<StoredUser[] | null>(USERS_KEY, null) ?? [];
+
+  // Self-heal: demo accounts must always be available, even after being
+  // deleted while testing the delete-account flow (matched by email).
+  const missingSeeds = seedUsers().filter(
+    (seed) => !stored.some((u) => u.email === seed.email),
+  );
+  if (missingSeeds.length === 0) return stored;
+
+  const merged = [...stored, ...missingSeeds];
+  writeJson(USERS_KEY, merged);
+  return merged;
 }
 
 function toPublicUser(user: StoredUser): User {
@@ -99,6 +104,14 @@ export const authMockStorage = {
     users[index] = updated;
     writeJson(USERS_KEY, users);
     return toPublicUser(updated);
+  },
+
+  /** Permanently remove a user account (settings page, DELETE /users/me) */
+  deleteUser(id: string): void {
+    writeJson(
+      USERS_KEY,
+      getUsers().filter((u) => u.id !== id),
+    );
   },
 
   validateLogin(email: string, password: string): User | null {

@@ -9,26 +9,27 @@ const PLACEHOLDER_COVER =
 const PLACEHOLDER_AUDIO =
   "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3";
 
+/** The demo artist dashboard mirrors حسن عطایی's published single from the catalog */
 function seedWorks(): ArtistWork[] {
-  const listeners = 12_400;
-  const streams = 48_900;
+  const listeners = 120_000;
+  const streams = 530_000;
   return [
     {
       id: createId("work"),
-      title: "ستاره‌ی دنباله‌دار",
+      title: "حسین اومده",
       artistId: "artist-1",
-      artistName: "سهراب پاکزاد",
+      artistName: "حسن عطایی",
       albumId: null,
       albumName: null,
-      coverUrl: PLACEHOLDER_COVER,
-      audioUrl: PLACEHOLDER_AUDIO,
-      duration: 224,
+      coverUrl: "/cover/cover9.jpg",
+      audioUrl: "/audio/track-9.mp3",
+      duration: 246,
       lyrics: "",
-      genre: "پاپ",
+      genre: "مولودی",
       releaseYear: 2025,
       listenersCount: listeners,
       streamsCount: streams,
-      publishedAt: "2025-03-12T00:00:00Z",
+      publishedAt: "2025-02-02T00:00:00Z",
       releaseType: "single",
       collaborators: [],
       revenue: calculateArtistReward(listeners, streams),
@@ -52,7 +53,7 @@ export const artistWorksStorage = {
       id: createId("work"),
       title: input.title.trim(),
       artistId: "artist-1",
-      artistName: "سهراب پاکزاد",
+      artistName: "حسن عطایی",
       albumId: null,
       albumName: null,
       coverUrl: input.coverUrl || PLACEHOLDER_COVER,

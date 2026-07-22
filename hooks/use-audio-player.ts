@@ -56,7 +56,15 @@ export function useAudioPlayer() {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
+    if (!audio) return;
+
+    // Player was closed — stop playback and release the source
+    if (!currentTrack) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      return;
+    }
 
     audio.src = currentTrack.audioUrl;
     audio.load();

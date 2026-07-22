@@ -4,6 +4,7 @@ import { AlbumCard } from "@/components/cards/album-card";
 import { PlaylistCard } from "@/components/cards/playlist-card";
 import { TrackCard } from "@/components/cards/track-card";
 import { HomeFeedSection } from "@/components/home/home-feed-section";
+import { Avatar } from "@/ui/avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { useTranslation } from "@/hooks/use-translation";
 import { useHomeFeed } from "@/queries/use-home-feed";
@@ -31,12 +32,26 @@ export default function HomePage() {
 
   return (
     <div className="space-y-10 py-4">
-      <div className="rounded-2xl border border-border/50 bg-gradient-to-l from-primary/10 to-transparent p-5 sm:p-6">
-        <p className="text-sm text-muted-foreground">{t("common.welcome")}</p>
-        <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
-          {user?.displayName ?? t("home.guest")}
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">{t("home.subtitle")}</p>
+      {/* Display name + profile picture (default fallback handled by Avatar) */}
+      <div className="relative flex items-center gap-5 overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-l from-primary/20 via-primary/5 to-transparent p-5 sm:p-7">
+        <div className="pointer-events-none absolute -top-16 -left-16 size-48 rounded-full bg-primary/10 blur-3xl" />
+        <Avatar
+          src={user?.avatarUrl}
+          alt={user?.displayName ?? t("home.guest")}
+          size="md"
+          className="size-14 shadow-lg ring-2 ring-primary/30 sm:size-16"
+        />
+        <div className="relative">
+          <p className="text-sm leading-6 text-muted-foreground">
+            {t("common.welcome")}
+          </p>
+          <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
+            {user?.displayName ?? t("home.guest")}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {t("home.subtitle")}
+          </p>
+        </div>
       </div>
 
       <HomeFeedSection

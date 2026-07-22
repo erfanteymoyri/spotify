@@ -4,6 +4,7 @@ export const messages: Messages = {
   app: {
     name: "اسپاتیفای",
     description: "سرویس استریم موسیقی",
+    tagline: "موسیقی را همان‌جا که هستی، جریان بده",
   },
   nav: {
     home: "خانه",
@@ -26,6 +27,7 @@ export const messages: Messages = {
     delete: "حذف",
     view: "مشاهده",
     follow: "دنبال کردن",
+    unfollow: "لغو دنبال کردن",
     tracks: "آهنگ",
     track: "آهنگ",
     albums: "آلبوم‌ها",
@@ -106,6 +108,12 @@ export const messages: Messages = {
     accountInfo: "اطلاعات حساب",
     username: "نام کاربری",
     birthDate: "تاریخ تولد",
+    gender: "جنسیت",
+    changeAvatar: "تغییر عکس پروفایل",
+    removeAvatar: "حذف عکس",
+    avatarTooLarge: "حجم عکس باید کمتر از ۲ مگابایت باشد",
+    avatarInvalidType: "فایل انتخابی باید یک تصویر باشد",
+    updateFailed: "به‌روزرسانی پروفایل ناموفق بود",
     avatarUpgradeHint:
       "برای تغییر عکس پروفایل، اشتراک خود را ارتقا دهید.",
   },
@@ -131,6 +139,8 @@ export const messages: Messages = {
     selectTrack: "برای پخش، یک آهنگ انتخاب کنید",
     playAlbum: "پخش آلبوم",
     playTrack: "پخش {title}",
+    close: "بستن پخش‌کننده",
+    expand: "نمایش تمام‌صفحه",
   },
   auth: {
     loginTitle: "ورود به حساب کاربری",
@@ -286,5 +296,6 @@ export const messages: Messages = {
     trackNotFound: "آهنگ یافت نشد",
     artistNotFound: "هنرمند یافت نشد",
     playlistNotFound: "پلی‌لیست یافت نشد",
+    userNotFound: "کاربر یافت نشد",
   },
 };

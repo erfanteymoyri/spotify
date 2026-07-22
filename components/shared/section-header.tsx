@@ -10,7 +10,9 @@ export function SectionHeader({ title, subtitle, action }: SectionHeaderProps) {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
         {subtitle && (
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+            {subtitle}
+          </p>
         )}
       </div>
       {action}

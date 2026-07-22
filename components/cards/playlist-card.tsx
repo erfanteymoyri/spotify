@@ -20,27 +20,27 @@ export function PlaylistCard({ playlist, className }: PlaylistCardProps) {
     <Link
       href={routes.playlist(playlist.id)}
       className={cn(
-        "group block rounded-lg bg-card/40 p-4 transition-colors hover:bg-card/80",
+        "group block rounded-xl bg-card/40 p-4 transition-all duration-300 hover:-translate-y-1 hover:bg-card hover:shadow-xl hover:shadow-black/10",
         className,
       )}
     >
-      <div className="relative mb-4 aspect-square overflow-hidden rounded-md bg-muted shadow-lg">
+      <div className="relative mb-4 aspect-square overflow-hidden rounded-lg bg-muted shadow-lg">
         {playlist.coverUrl ? (
           <Image
             src={playlist.coverUrl}
             alt={playlist.name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 50vw, 200px"
           />
         ) : (
-          <div className="flex size-full items-center justify-center">
-            <ListMusic className="size-12 text-muted-foreground" />
+          <div className="flex size-full items-center justify-center bg-gradient-to-br from-primary/15 to-muted">
+            <ListMusic className="size-12 text-muted-foreground transition-transform duration-300 group-hover:scale-110" />
           </div>
         )}
       </div>
       <h3 className="truncate font-semibold">{playlist.name}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
         {t("playlists.trackCount", { count: playlist.trackIds.length })}
       </p>
     </Link>

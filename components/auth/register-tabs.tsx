@@ -13,14 +13,16 @@ export function RegisterTabs() {
   const [tab, setTab] = useState<Tab>("listener");
 
   return (
-    <div className="space-y-6">
-      <div className="flex rounded-lg bg-muted p-1">
+    <div className="space-y-4">
+      <div className="flex rounded-xl bg-muted/70 p-1">
         <button
           type="button"
           onClick={() => setTab("listener")}
           className={cn(
-            "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
-            tab === "listener" && "bg-background shadow",
+            "flex-1 rounded-lg py-2 text-sm font-medium transition-all",
+            tab === "listener"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {t("auth.listener")}
@@ -29,8 +31,10 @@ export function RegisterTabs() {
           type="button"
           onClick={() => setTab("artist")}
           className={cn(
-            "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
-            tab === "artist" && "bg-background shadow",
+            "flex-1 rounded-lg py-2 text-sm font-medium transition-all",
+            tab === "artist"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {t("auth.artist")}

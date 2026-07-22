@@ -28,11 +28,11 @@ export function TrackCard({
   return (
     <div
       className={cn(
-        "group flex items-center gap-4 rounded-lg p-2 transition-colors hover:bg-card/60",
+        "group flex items-center gap-4 rounded-xl p-2.5 transition-all duration-300 hover:bg-card/70 hover:shadow-md hover:shadow-black/5",
         className,
       )}
     >
-      <div className="relative size-12 shrink-0 overflow-hidden rounded-md">
+      <div className="relative size-12 shrink-0 overflow-hidden rounded-lg shadow-sm">
         <Image
           src={track.coverUrl}
           alt={track.title}
@@ -43,7 +43,7 @@ export function TrackCard({
         <button
           type="button"
           onClick={() => playTrack(track, queue ?? [track])}
-          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
           aria-label={t("player.playTrack", { title: track.title })}
         >
           <Play className="size-5 fill-white text-white" />
@@ -53,12 +53,15 @@ export function TrackCard({
         <button
           type="button"
           onClick={() => playTrack(track, queue ?? [track])}
-          className="block w-full truncate text-left font-medium hover:underline"
+          className="block w-full truncate text-start font-medium hover:underline"
         >
           {track.title}
         </button>
-        <div className="flex items-center gap-1 truncate text-sm text-muted-foreground">
-          <Link href={routes.artist(track.artistId)} className="hover:underline">
+        <div className="mt-0.5 flex items-center gap-1.5 truncate text-sm leading-6 text-muted-foreground">
+          <Link
+            href={routes.artist(track.artistId)}
+            className="transition-colors hover:text-primary hover:underline"
+          >
             {track.artistName}
           </Link>
           {showAlbum && track.albumName && (
@@ -66,7 +69,7 @@ export function TrackCard({
               <span>•</span>
               <Link
                 href={track.albumId ? routes.album(track.albumId) : "#"}
-                className="hover:underline"
+                className="transition-colors hover:text-primary hover:underline"
               >
                 {track.albumName}
               </Link>

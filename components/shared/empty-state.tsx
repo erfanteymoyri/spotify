@@ -24,10 +24,10 @@ export function EmptyState({
       <div className="flex size-16 items-center justify-center rounded-full bg-muted">
         <Music2 className="size-8 text-muted-foreground" />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <h3 className="text-lg font-semibold">{title}</h3>
         {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-sm leading-6 text-muted-foreground">{description}</p>
         )}
       </div>
       {action}

@@ -26,6 +26,8 @@ interface PlayerState {
   setRepeatMode: (mode: RepeatMode) => void;
   toggleShuffle: () => void;
   toggleExpanded: () => void;
+  /** Stop playback and dismiss the player bar entirely */
+  closePlayer: () => void;
   seekTo: (time: number) => void;
 }
 
@@ -119,5 +121,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setRepeatMode: (mode) => set({ repeatMode: mode }),
   toggleShuffle: () => set((s) => ({ isShuffle: !s.isShuffle })),
   toggleExpanded: () => set((s) => ({ isExpanded: !s.isExpanded })),
+  closePlayer: () =>
+    set({
+      currentTrack: null,
+      queue: [],
+      isPlaying: false,
+      progress: 0,
+      duration: 0,
+      isExpanded: false,
+    }),
   seekTo: () => {},
 }));

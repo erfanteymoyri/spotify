@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Stagger, StaggerItem } from "@/components/shared/motion";
 import { SectionHeader } from "@/components/shared/section-header";
 import { cn } from "@/lib/utils";
 
@@ -31,12 +32,18 @@ export function HomeFeedSection<T>({
       <SectionHeader title={title} subtitle={subtitle} />
       {items.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
-      ) : layout === "grid" ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {items.map((item) => renderItem(item))}
-        </div>
       ) : (
-        <div className="space-y-1">{items.map((item) => renderItem(item))}</div>
+        <Stagger
+          className={cn(
+            layout === "grid"
+              ? "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+              : "space-y-1",
+          )}
+        >
+          {items.map((item, index) => (
+            <StaggerItem key={index}>{renderItem(item)}</StaggerItem>
+          ))}
+        </Stagger>
       )}
     </section>
   );

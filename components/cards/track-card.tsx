@@ -24,6 +24,9 @@ export function TrackCard({
 }: TrackCardProps) {
   const { t } = useTranslation();
   const playTrack = usePlayerStore((s) => s.playTrack);
+  const isActiveTrack = usePlayerStore(
+    (s) => s.currentTrack?.id === track.id && s.isPlaying,
+  );
 
   return (
     <div
@@ -40,6 +43,18 @@ export function TrackCard({
           className="object-cover"
           sizes="48px"
         />
+        {/* Animated equalizer marks the currently playing track */}
+        {isActiveTrack && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-0.5 bg-black/55">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-4 w-1 origin-bottom animate-[equalizer_1s_ease-in-out_infinite] rounded-full bg-primary"
+                style={{ animationDelay: `${i * 0.18}s` }}
+              />
+            ))}
+          </div>
+        )}
         <button
           type="button"
           onClick={() => playTrack(track, queue ?? [track])}
@@ -53,7 +68,10 @@ export function TrackCard({
         <button
           type="button"
           onClick={() => playTrack(track, queue ?? [track])}
-          className="block w-full truncate text-start font-medium hover:underline"
+          className={cn(
+            "block w-full truncate text-start font-medium hover:underline",
+            isActiveTrack && "text-primary",
+          )}
         >
           {track.title}
         </button>

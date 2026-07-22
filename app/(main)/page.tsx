@@ -4,6 +4,7 @@ import { AlbumCard } from "@/components/cards/album-card";
 import { PlaylistCard } from "@/components/cards/playlist-card";
 import { TrackCard } from "@/components/cards/track-card";
 import { HomeFeedSection } from "@/components/home/home-feed-section";
+import { FadeIn } from "@/components/shared/motion";
 import { Avatar } from "@/ui/avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { useTranslation } from "@/hooks/use-translation";
@@ -33,8 +34,8 @@ export default function HomePage() {
   return (
     <div className="space-y-10 py-4">
       {/* Display name + profile picture (default fallback handled by Avatar) */}
-      <div className="relative flex items-center gap-5 overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-l from-primary/20 via-primary/5 to-transparent p-5 sm:p-7">
-        <div className="pointer-events-none absolute -top-16 -left-16 size-48 rounded-full bg-primary/10 blur-3xl" />
+      <FadeIn className="relative flex items-center gap-5 overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-l from-primary/20 via-primary/5 to-transparent p-5 sm:p-7">
+        <div className="pointer-events-none absolute -top-16 -left-16 size-48 rounded-full bg-primary/10 blur-3xl animate-[float_10s_ease-in-out_infinite]" />
         <Avatar
           src={user?.avatarUrl}
           alt={user?.displayName ?? t("home.guest")}
@@ -52,7 +53,7 @@ export default function HomePage() {
             {t("home.subtitle")}
           </p>
         </div>
-      </div>
+      </FadeIn>
 
       <HomeFeedSection
         title={t("home.recentlyPlayed")}

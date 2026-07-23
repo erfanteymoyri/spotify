@@ -2,6 +2,7 @@
 
 import { Avatar } from "@/ui/avatar";
 import { Button } from "@/ui/button";
+import { FadeIn } from "@/components/shared/motion";
 import { SectionHeader } from "@/components/shared/section-header";
 import { subscriptionLimits } from "@/config/subscription";
 import { useTranslation } from "@/hooks/use-translation";
@@ -37,7 +38,7 @@ export function ProfileView({
   const dateLocale = locale === "fa" ? "fa-IR" : "en-US";
 
   return (
-    <div className="space-y-8 py-4">
+    <FadeIn className="space-y-8 py-4">
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
         <Avatar src={user.avatarUrl} alt={user.displayName} size="lg" />
         <div className="flex-1 text-center sm:text-right">
@@ -111,7 +112,7 @@ export function ProfileView({
           {t("profile.avatarUpgradeHint")}
         </p>
       )}
-    </div>
+    </FadeIn>
   );
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -10,16 +11,19 @@ import {
   Settings,
   User,
   LayoutDashboard,
+  LogOut,
   Music,
 } from "lucide-react";
 import { routes } from "@/config/site";
 import { useAuth } from "@/contexts/auth-context";
+import { useLogout } from "@/hooks/use-logout";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { logout, loading: loggingOut } = useLogout();
   const { t } = useTranslation();
 
   const mainNav = [
@@ -54,7 +58,11 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col gap-2 bg-sidebar p-4 md:flex">
-      <Link href={routes.home} className="mb-6 px-2">
+      <Link
+        href={routes.home}
+        className="mb-6 flex items-center gap-2.5 px-2 transition-opacity hover:opacity-80"
+      >
+        <Image src="/logo.png" alt="" width={32} height={32} className="size-8" />
         <span className="text-xl font-bold text-primary">{t("app.name")}</span>
       </Link>
 
@@ -85,6 +93,16 @@ export function Sidebar() {
           },
         )}
       </nav>
+
+      <button
+        type="button"
+        onClick={logout}
+        disabled={loggingOut}
+        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+      >
+        <LogOut className="size-5 shrink-0" />
+        {loggingOut ? t("common.loading") : t("common.logout")}
+      </button>
     </aside>
   );
 }

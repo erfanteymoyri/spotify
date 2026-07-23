@@ -1,20 +1,28 @@
 import {
   mockHomeFeed,
-  mockPlaylists,
   mockTracks,
   mockAlbums,
   getTrackById,
   getAlbumById,
   getAlbumTracks,
   getArtistById,
-  getPlaylistById,
-  getPlaylistTracks,
 } from "@/lib/mock-data";
 import { apiClient } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
 import { backendCapabilities } from "@/config/backend";
+import { authMockStorage } from "@/lib/auth-mock-storage";
+import { followStorage } from "@/lib/follow-storage";
+import { playlistStorage } from "@/lib/playlist-storage";
+import { canCreatePlaylist } from "@/config/subscription";
 import { delay, shouldUseBackend } from "@/lib/service-utils";
-import type { Album, HomeFeed, PaginatedResponse, Track } from "@/types";
+import type {
+  Album,
+  HomeFeed,
+  PaginatedResponse,
+  Playlist,
+  Track,
+  User,
+} from "@/types";
 
 export const musicService = {
   /** GET /home — recentlyPlayedPlaylists, latestAlbums, popularTracks */
@@ -70,8 +78,8 @@ export const musicService = {
     return track;
   },
 
-  /** GET /artists/:id — ArtistProfile + albums[] + singles[] */
-  async getArtist(id: string) {
+  /** GET /artists/:id — ArtistProfile + albums[] + singles[] + follow state */
+  async getArtist(id: string, viewerId?: string) {
     await delay(200);
     const artist = getArtistById(id);
     if (!artist) throw new Error("Artist not found");
@@ -79,7 +87,47 @@ export const musicService = {
     const singles = mockTracks.filter(
       (t) => t.artistId === id && t.albumId === null,
     );
-    return { ...artist, albums, singles };
+    const isFollowing = viewerId
+      ? followStorage.isFollowing(viewerId, id)
+      : false;
+    return {
+      ...artist,
+      albums,
+      singles,
+      isFollowing,
+      followersCount: artist.followersCount + (isFollowing ? 1 : 0),
+    };
+  },
+
+  /** POST|DELETE /artists/:id/follow */
+  async setFollowingArtist(
+    userId: string,
+    artistId: string,
+    follow: boolean,
+  ): Promise<{ isFollowing: boolean; followersCount: number; currentUser?: User }> {
+    await delay(250);
+    const artist = getArtistById(artistId);
+    if (!artist) throw new Error("Artist not found");
+
+    const changed = followStorage.set(userId, artistId, follow);
+    let currentUser: User | undefined;
+    if (changed) {
+      const user = authMockStorage.findById(userId);
+      if (user) {
+        currentUser = authMockStorage.updateUser(userId, {
+          followingCount: Math.max(
+            0,
+            user.followingCount + (follow ? 1 : -1),
+          ),
+        });
+      }
+    }
+
+    return {
+      isFollowing: follow,
+      followersCount: artist.followersCount + (follow ? 1 : 0),
+      currentUser,
+    };
   },
 
   /** POST /tracks/:id/stream — backend enforces daily stream limits by tier */
@@ -90,39 +138,71 @@ export const musicService = {
   },
 };
 
+function resolvePlaylistTracks(playlist: Playlist): Track[] {
+  return playlist.trackIds
+    .map((id) => getTrackById(id))
+    .filter((t): t is Track => t !== undefined);
+}
+
 export const playlistService = {
-  /** GET /playlists */
-  async getPlaylists() {
+  /** GET /playlists — current user's playlists */
+  async getPlaylists(userId: string): Promise<Playlist[]> {
     await delay(200);
-    return mockPlaylists;
+    return playlistStorage.getForUser(userId);
   },
 
-  /** GET /playlists/:id */
-  async getPlaylist(id: string) {
+  /** GET /playlists/:id — details + resolved tracks */
+  async getPlaylist(userId: string, playlistId: string) {
     await delay(200);
-    const playlist = getPlaylistById(id);
-    if (!playlist) throw new Error("Playlist not found");
-    return { ...playlist, tracks: getPlaylistTracks(id) };
+    const playlist = playlistStorage.getById(userId, playlistId);
+    if (!playlist) throw new Error("PLAYLIST_NOT_FOUND");
+    return { ...playlist, tracks: resolvePlaylistTracks(playlist) };
   },
 
   /** POST /playlists — backend enforces maxPlaylists by subscription tier */
-  async createPlaylist(name: string) {
+  async createPlaylist(userId: string, name: string): Promise<Playlist> {
     await delay(300);
-    return {
-      id: `playlist-${Date.now()}`,
-      name,
-      ownerId: "user-1",
-      coverUrl: null,
-      trackIds: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const tier = authMockStorage.findById(userId)?.subscription ?? "free";
+    const current = playlistStorage.getForUser(userId).length;
+    if (!canCreatePlaylist(tier, current)) {
+      throw new Error("PLAYLIST_LIMIT_REACHED");
+    }
+    return playlistStorage.create(userId, name);
   },
 
-  /** POST /playlists/:id/tracks */
-  async addTrackToPlaylist(playlistId: string, trackId: string) {
-    void playlistId;
-    void trackId;
+  /** PATCH /playlists/:id — rename */
+  async renamePlaylist(
+    userId: string,
+    playlistId: string,
+    name: string,
+  ): Promise<Playlist> {
+    await delay(250);
+    return playlistStorage.rename(userId, playlistId, name);
+  },
+
+  /** DELETE /playlists/:id */
+  async deletePlaylist(userId: string, playlistId: string): Promise<void> {
+    await delay(250);
+    playlistStorage.remove(userId, playlistId);
+  },
+
+  /** POST /playlists/:id/tracks — { trackId } */
+  async addTrackToPlaylist(
+    userId: string,
+    playlistId: string,
+    trackId: string,
+  ): Promise<Playlist> {
     await delay(200);
+    return playlistStorage.setTrack(userId, playlistId, trackId, true);
+  },
+
+  /** DELETE /playlists/:id/tracks/:trackId */
+  async removeTrackFromPlaylist(
+    userId: string,
+    playlistId: string,
+    trackId: string,
+  ): Promise<Playlist> {
+    await delay(200);
+    return playlistStorage.setTrack(userId, playlistId, trackId, false);
   },
 };

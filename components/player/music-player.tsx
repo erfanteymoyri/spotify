@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "motion/react";
 import {
   Pause,
   Play,
@@ -60,7 +61,12 @@ export function MusicPlayer() {
 
   if (isExpanded && !isMobile) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-primary/15 via-card to-background p-8">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.35 }}
+        className="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-primary/15 via-card to-background p-8"
+      >
         <div className="flex justify-between">
           <Button
             variant="ghost"
@@ -75,7 +81,12 @@ export function MusicPlayer() {
           </Button>
         </div>
         <div className="mx-auto flex max-w-4xl flex-1 flex-col items-center justify-center gap-8">
-          <div className="relative size-80 overflow-hidden rounded-2xl shadow-2xl shadow-primary/10 ring-1 ring-border/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
+            className="relative size-80 overflow-hidden rounded-2xl shadow-2xl shadow-primary/10 ring-1 ring-border/50"
+          >
             <Image
               src={currentTrack.coverUrl}
               alt={currentTrack.title}
@@ -83,7 +94,7 @@ export function MusicPlayer() {
               className="object-cover"
               priority
             />
-          </div>
+          </motion.div>
           <div className="w-full max-w-xl text-center">
             <h2 className="text-3xl font-bold">{currentTrack.title}</h2>
             <Link
@@ -118,12 +129,17 @@ export function MusicPlayer() {
             expanded
           />
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-border/50 bg-card/85 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.25)] backdrop-blur-xl">
+    <motion.footer
+      initial={{ y: 96, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 320, damping: 32 }}
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border/50 bg-card/85 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.25)] backdrop-blur-xl"
+    >
       {/* Seek bar spans the full width — always LTR like standard players */}
       <div dir="ltr" className="hidden px-4 pt-2 md:block">
         <Slider
@@ -216,7 +232,7 @@ export function MusicPlayer() {
           </Button>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }
 

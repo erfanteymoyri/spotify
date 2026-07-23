@@ -9,6 +9,7 @@ import {
   Receipt,
   Tag,
   ArrowRight,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
 import { LanguageToggle } from "@/components/shared/language-toggle";
@@ -17,6 +18,7 @@ import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { routes } from "@/config/site";
 import { useAuth } from "@/contexts/auth-context";
+import { useLogout } from "@/hooks/use-logout";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +40,7 @@ const NAV_ITEMS: AdminNavItem[] = [
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { logout, loading: loggingOut } = useLogout();
   const { t } = useTranslation();
 
   const isAdmin = user?.role === "admin";
@@ -84,6 +87,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             {t("admin.backToApp")}
           </Link>
         </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="justify-start text-muted-foreground hover:text-destructive"
+          onClick={logout}
+          disabled={loggingOut}
+        >
+          <LogOut className="size-4" />
+          {loggingOut ? t("common.loading") : t("common.logout")}
+        </Button>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -92,6 +105,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <ThemeToggle compact />
             <LanguageToggle compact />
+            {/* Desktop logout lives in the aside; keep it reachable on mobile */}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground hover:text-destructive md:hidden"
+              onClick={logout}
+              disabled={loggingOut}
+              aria-label={t("common.logout")}
+            >
+              <LogOut className="size-4" />
+            </Button>
           </div>
         </header>
 

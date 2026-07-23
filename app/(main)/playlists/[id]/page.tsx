@@ -13,6 +13,7 @@ import { Dialog } from "@/ui/dialog";
 import { Input } from "@/ui/input";
 import { routes } from "@/config/site";
 import { useTranslation } from "@/hooks/use-translation";
+import { confirmToast, toast } from "@/lib/toast";
 import { playlistService } from "@/services/music.service";
 import { useAuthStore } from "@/stores/auth-store";
 import type { Track } from "@/types";
@@ -58,11 +59,19 @@ export default function PlaylistDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!userId || !playlist) return;
-    if (!window.confirm(t("playlists.deleteConfirm"))) return;
-    await playlistService.deletePlaylist(userId, playlist.id);
-    router.replace(routes.playlists);
+    confirmToast({
+      title: t("playlists.deleteConfirm"),
+      confirmLabel: t("common.delete"),
+      cancelLabel: t("common.cancel"),
+      destructive: true,
+      onConfirm: async () => {
+        await playlistService.deletePlaylist(userId, playlist.id);
+        toast.success(t("playlists.deleted"));
+        router.replace(routes.playlists);
+      },
+    });
   };
 
   const handleRemoveTrack = async (trackId: string) => {
@@ -80,6 +89,7 @@ export default function PlaylistDetailPage() {
           }
         : prev,
     );
+    toast.success(t("playlists.trackRemoved"));
   };
 
   if (notFound) {
@@ -159,7 +169,7 @@ export default function PlaylistDetailPage() {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   aria-label={t("playlists.removeTrack")}
                   onClick={() => handleRemoveTrack(track.id)}
                 >

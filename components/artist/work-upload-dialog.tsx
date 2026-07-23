@@ -96,7 +96,7 @@ export function WorkUploadDialog({
       </div>
 
       {/* Two-column compact layout keeps the whole form in view (no scrolling) */}
-      <div className="scrollbar-none max-h-[calc(100dvh-11rem)] space-y-3 overflow-y-auto px-5 py-3">
+      <div className="max-h-[calc(100dvh-11rem)] space-y-3 overflow-y-auto px-5 py-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label={t("artist.trackTitle")}>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />

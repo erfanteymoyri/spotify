@@ -64,16 +64,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   pause: () => set({ isPlaying: false }),
   play: () => set({ isPlaying: true }),
 
+  // Repeat-one autoplay is handled in the audio hook; here `fromAutoplay`
+  // only distinguishes a natural end (stop at queue end) from a manual skip.
   next: (fromAutoplay = false) => {
     const { queue, currentTrack, repeatMode, isShuffle, seekTo } = get();
     if (!currentTrack || queue.length === 0) return;
-
-    // Repeat-one only loops on natural track end; manual skips move on
-    if (fromAutoplay && repeatMode === "one") {
-      seekTo(0);
-      set({ isPlaying: true });
-      return;
-    }
 
     const currentIndex = queue.findIndex((t) => t.id === currentTrack.id);
 

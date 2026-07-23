@@ -53,7 +53,7 @@ export function TopBar() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="text-muted-foreground hover:text-destructive md:hidden"
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive md:hidden"
           onClick={logout}
           disabled={loggingOut}
           aria-label={t("common.logout")}

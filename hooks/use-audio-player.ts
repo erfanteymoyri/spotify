@@ -35,12 +35,21 @@ export function useAudioPlayer() {
     const onTimeUpdate = () => setProgress(audio.currentTime);
     const onLoadedMetadata = () => setDuration(audio.duration);
     const onEnded = () => {
-      const track = usePlayerStore.getState().currentTrack;
+      const state = usePlayerStore.getState();
+      const track = state.currentTrack;
       if (track) {
         musicService.recordStream(track.id, audio.duration);
       }
-      // Natural end — repeat-one loops here, unlike a manual skip
-      usePlayerStore.getState().next(true);
+      // Repeat-one must replay at the audio layer: isPlaying is already true,
+      // so a store update alone would not re-fire the play effect.
+      if (state.repeatMode === "one") {
+        audio.currentTime = 0;
+        state.setProgress(0);
+        audio.play().catch(() => {});
+        return;
+      }
+      // Otherwise advance the queue (natural end honors repeat-all / stop)
+      state.next(true);
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);

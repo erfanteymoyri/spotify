@@ -11,7 +11,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
-        <main className="scrollbar-none flex-1 overflow-y-auto px-4 pb-28 md:px-6 md:pb-24">
+        <main className="flex-1 overflow-y-auto px-4 pb-28 md:px-6 md:pb-24">
           {children}
         </main>
         <MusicPlayer />

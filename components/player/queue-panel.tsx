@@ -100,7 +100,7 @@ export function QueuePanel({ open, onClose }: QueuePanelProps) {
                         size="icon-sm"
                         onClick={() => removeFromQueue(track.id)}
                         aria-label={t("player.removeFromQueue")}
-                        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive"
+                        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive"
                       >
                         <X className="size-4" />
                       </Button>

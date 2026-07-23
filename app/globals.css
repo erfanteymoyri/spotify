@@ -184,14 +184,6 @@
   }
 }
 
-@utility scrollbar-none {
-  /* Hide the bar where scrolling is self-evident (main content panes) */
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
 /* Decorative keyframes — used via animate-[...] arbitrary utilities */
 @keyframes float {
   0%,

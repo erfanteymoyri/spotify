@@ -10,6 +10,7 @@ import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatCompactNumber } from "@/lib/format";
+import { confirmToast, toast } from "@/lib/toast";
 import { artistService } from "@/services/artist.service";
 import type { ArtistWork, ArtistWorkInput } from "@/types";
 
@@ -52,10 +53,18 @@ export default function ArtistDashboardPage() {
     setDialogOpen(false);
   };
 
-  const remove = async (id: string) => {
-    if (!window.confirm(t("artist.deleteConfirm"))) return;
-    await artistService.deleteWork(id);
-    setWorks((prev) => prev.filter((work) => work.id !== id));
+  const remove = (id: string) => {
+    confirmToast({
+      title: t("artist.deleteConfirm"),
+      confirmLabel: t("common.delete"),
+      cancelLabel: t("common.cancel"),
+      destructive: true,
+      onConfirm: async () => {
+        await artistService.deleteWork(id);
+        setWorks((prev) => prev.filter((work) => work.id !== id));
+        toast.success(t("artist.workDeleted"));
+      },
+    });
   };
 
   return (

@@ -109,7 +109,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="text-muted-foreground hover:text-destructive md:hidden"
+              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive md:hidden"
               onClick={logout}
               disabled={loggingOut}
               aria-label={t("common.logout")}
@@ -137,7 +137,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <main className="scrollbar-none flex-1 overflow-y-auto p-4 pb-[env(safe-area-inset-bottom)] md:p-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-[env(safe-area-inset-bottom)] md:p-6">
           {children}
         </main>
       </div>

@@ -94,7 +94,7 @@ export function MusicPlayer() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 48 }}
             transition={{ duration: 0.35, ease: [0.25, 0.4, 0.25, 1] }}
-            className="scrollbar-none fixed inset-0 z-50 flex flex-col overflow-y-auto bg-gradient-to-b from-primary/15 via-card to-background p-4 sm:p-8"
+            className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-gradient-to-b from-primary/15 via-card to-background p-4 sm:p-8"
           >
             <div className="flex justify-between">
               <Button
@@ -322,7 +322,7 @@ export function MusicPlayer() {
                   size="icon-sm"
                   onClick={closePlayer}
                   aria-label={t("player.close")}
-                  className="text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
                   <X className="size-4" />
                 </Button>

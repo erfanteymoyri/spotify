@@ -123,7 +123,7 @@ export default function NotificationsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => remove(notif.id)}
                   >
                     {t("common.delete")}

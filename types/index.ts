@@ -68,6 +68,16 @@ export interface Track {
   listenersCount?: number;
   streamsCount?: number;
   publishedAt: string;
+  /**
+   * Still inside the gold-only early-access window.
+   *
+   * Purely a hint for the "new release" badge — anything that reaches the
+   * client has already passed the server's embargo, so this never decides
+   * whether something may be played.
+   */
+  isEarlyAccess: boolean;
+  /** Position within its album; 1 for a single. */
+  trackNumber: number;
 }
 
 export interface Album {
@@ -79,6 +89,7 @@ export interface Album {
   releaseDate: string;
   genre?: string;
   trackIds: string[];
+  isEarlyAccess: boolean;
 }
 
 export interface Playlist {
@@ -121,6 +132,22 @@ export interface SubscriptionPlan {
   canViewStats: boolean;
 }
 
+/**
+ * One purchasable duration (spec 3.2) with what committing to it saves.
+ *
+ * `prices` / `fullPrices` are keyed by tier and already resolved by the server,
+ * so the client never re-applies the percentage itself — the figure shown is by
+ * construction the figure charged at checkout.
+ */
+export interface BillingOption {
+  months: number;
+  discountPercent: number;
+  /** Cheapest per-month rate; drives the "best value" badge. */
+  isBestValue: boolean;
+  prices: Partial<Record<SubscriptionTier, number>>;
+  fullPrices: Partial<Record<SubscriptionTier, number>>;
+}
+
 export interface UserSettings {
   notificationsEnabled: boolean;
   volume: number;
@@ -157,6 +184,26 @@ export interface ArtistWorkInput {
   lyrics: string;
   /** Length in seconds, read from the selected audio file. */
   duration?: number;
+  /**
+   * Publish straight into one of the artist's existing albums. Only meaningful
+   * when `releaseType` is `"album"`; leaving it unset there creates a new album
+   * named after the track.
+   */
+  albumId?: string | null;
+}
+
+/** An album as its own artist sees it in the studio: the full tracklist. */
+export interface ArtistAlbum extends Album {
+  tracks: ArtistWork[];
+  trackCount: number;
+  publishedAt: string;
+}
+
+/** What the album editor collects; the cover travels as a multipart part. */
+export interface ArtistAlbumInput {
+  title: string;
+  genre: string;
+  releaseDate?: string;
 }
 
 export type TicketStatus = "open" | "answered" | "closed";

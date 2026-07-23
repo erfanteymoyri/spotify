@@ -11,6 +11,8 @@ export const routes = {
   playlist: (id: string) => `/playlists/${id}`,
   library: "/library",
   settings: "/settings",
+  subscription: "/subscription",
+  support: "/support",
   notifications: "/notifications",
   artistDashboard: "/artist/dashboard",
   adminDashboard: "/admin",

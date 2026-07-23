@@ -107,6 +107,8 @@ export const endpoints = {
   subscriptions: {
     /** GET — prices and limits for every tier */
     plans: "/subscriptions/plans",
+    /** GET — the 1/3/6/12-month ladder with each duration's discount and totals */
+    billingOptions: "/subscriptions/billing-options",
     /** GET — my tier, plan and active subscription */
     me: "/subscriptions/me",
     history: "/subscriptions/history",
@@ -141,6 +143,18 @@ export const endpoints = {
     analytics: "/artist/analytics",
     /** GET — my monthly payout statements */
     payouts: "/artist/payouts",
+
+    /** GET my albums with their tracklists | POST (multipart) to create one */
+    albums: "/artist/albums",
+    /** GET | PATCH (multipart) | DELETE — deleting keeps the tracks as singles */
+    albumById: (id: string) => `/artist/albums/${id}`,
+    /** POST { trackId } — move one of my tracks into this album */
+    albumTracks: (id: string) => `/artist/albums/${id}/tracks`,
+    /** DELETE — detach a track; it becomes a single again */
+    albumTrack: (albumId: string, trackId: string) =>
+      `/artist/albums/${albumId}/tracks/${trackId}`,
+    /** PATCH { trackIds } — the album's running order */
+    albumOrder: (id: string) => `/artist/albums/${id}/order`,
   },
 
   // --- Back office (support / admin) ---

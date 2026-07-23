@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, Eye, X } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SectionHeader } from "@/components/shared/section-header";
 import { Badge } from "@/ui/badge";
@@ -26,6 +26,9 @@ export default function AdminArtistsPage() {
   const [requests, setRequests] = useState<ArtistRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+
+  const viewing = requests.find((req) => req.id === viewingId) ?? null;
 
   useEffect(() => {
     adminService
@@ -43,12 +46,14 @@ export default function AdminArtistsPage() {
   const approve = async (id: string) => {
     await adminService.reviewArtist(id, "approve");
     applyStatus(id, "approved");
+    setViewingId(null);
   };
 
   const confirmReject = async (id: string, reason: string) => {
     await adminService.reviewArtist(id, "reject", reason);
     applyStatus(id, "rejected");
     setRejectingId(null);
+    setViewingId(null);
   };
 
   if (loading) {
@@ -93,38 +98,52 @@ export default function AdminArtistsPage() {
                   <Badge variant={meta.variant}>{t(meta.labelKey)}</Badge>
                 </div>
 
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    {t("admin.artistSampleWorks")}
-                  </p>
-                  <p className="mt-1 text-sm leading-6">{request.sampleWorks}</p>
-                </div>
-
                 <p className="text-xs text-muted-foreground">
                   {formatDate(request.createdAt)}
                 </p>
 
-                {isPending && (
-                  <div className="flex gap-2 border-t border-border pt-3">
-                    <Button size="sm" onClick={() => approve(request.id)}>
-                      <Check className="size-4" />
-                      {t("admin.approve")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setRejectingId(request.id)}
-                    >
-                      <X className="size-4" />
-                      {t("admin.reject")}
-                    </Button>
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                  {/* Reviewing happens on the request details view (spec 2.11.1) */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setViewingId(request.id)}
+                  >
+                    <Eye className="size-4" />
+                    {t("admin.viewPortfolio")}
+                  </Button>
+                  {isPending && (
+                    <>
+                      <Button size="sm" onClick={() => approve(request.id)}>
+                        <Check className="size-4" />
+                        {t("admin.approve")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setRejectingId(request.id)}
+                      >
+                        <X className="size-4" />
+                        {t("admin.reject")}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </article>
             );
           })}
         </div>
       )}
+
+      <PortfolioDialog
+        request={viewing}
+        onClose={() => setViewingId(null)}
+        onApprove={approve}
+        onReject={(id) => {
+          setViewingId(null);
+          setRejectingId(id);
+        }}
+      />
 
       <RejectDialog
         open={rejectingId !== null}
@@ -134,6 +153,92 @@ export default function AdminArtistsPage() {
         }
       />
     </div>
+  );
+}
+
+function PortfolioDialog({
+  request,
+  onClose,
+  onApprove,
+  onReject,
+}: {
+  request: ArtistRequest | null;
+  onClose: () => void;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const open = request !== null;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open && !dialog.open) dialog.showModal();
+    if (!open && dialog.open) dialog.close();
+  }, [open]);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      onClose={onClose}
+      className="fixed inset-0 z-50 m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-border bg-background p-0 shadow-xl backdrop:bg-black/60 open:flex open:flex-col"
+    >
+      {request && (
+        <>
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <h2 className="text-lg font-semibold">{request.stageName}</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label={t("common.close")}
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+
+          <div className="max-h-[60vh] space-y-5 overflow-y-auto px-5 py-4">
+            <div>
+              <p className="text-xs leading-5 text-muted-foreground">
+                {t("common.email")}
+              </p>
+              <p dir="auto" className="mt-1 text-sm font-medium break-words">
+                {request.email}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs leading-5 text-muted-foreground">
+                {t("admin.artistSampleWorks")}
+              </p>
+              <p className="mt-1.5 text-sm leading-7 whitespace-pre-line">
+                {request.sampleWorks}
+              </p>
+            </div>
+            <p className="text-xs leading-5 text-muted-foreground">
+              {formatDate(request.createdAt)}
+            </p>
+          </div>
+
+          {request.status === "pending" && (
+            <div className="flex justify-end gap-2 border-t border-border px-5 py-4">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onReject(request.id)}
+              >
+                <X className="size-4" />
+                {t("admin.reject")}
+              </Button>
+              <Button size="sm" onClick={() => onApprove(request.id)}>
+                <Check className="size-4" />
+                {t("admin.approve")}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </dialog>
   );
 }
 

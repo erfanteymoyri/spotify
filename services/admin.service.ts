@@ -3,6 +3,7 @@ import { endpoints } from "@/api/endpoints";
 import { backendCapabilities } from "@/config/backend";
 import { adminMockStorage } from "@/lib/admin-mock-storage";
 import { authMockStorage } from "@/lib/auth-mock-storage";
+import { notificationStorage } from "@/lib/notification-storage";
 import { delay, shouldUseBackend } from "@/lib/service-utils";
 import type {
   AdminStats,
@@ -110,7 +111,29 @@ export const adminService = {
     }
 
     await delay(300);
+    const request = authMockStorage
+      .getPublicArtistRequests()
+      .find((req) => req.id === id);
     authMockStorage.reviewArtistRequest(id, action);
+
+    // Spec 2.11.1 — the artist receives a notification with the review result
+    if (request) {
+      notificationStorage.add(
+        action === "approve"
+          ? {
+              type: "artist_approval",
+              title: "تایید حساب هنرمند",
+              message: `درخواست هنرمندی «${request.stageName}» تایید شد. اکنون می‌توانید آثار خود را منتشر کنید.`,
+              link: "/artist/dashboard",
+            }
+          : {
+              type: "artist_rejection",
+              title: "رد درخواست هنرمند",
+              message: `درخواست هنرمندی «${request.stageName}» رد شد.${reason ? ` علت: ${reason}` : ""}`,
+            },
+      );
+    }
+
     return { status: action === "approve" ? "approved" : "rejected" };
   },
 

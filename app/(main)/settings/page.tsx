@@ -13,12 +13,13 @@ import { Dialog } from "@/ui/dialog";
 import { Slider } from "@/ui/slider";
 import { routes } from "@/config/site";
 import { useTranslation } from "@/hooks/use-translation";
+import { adminService } from "@/services/admin.service";
 import { settingsService } from "@/services/notification.service";
 import { userService } from "@/services/user.service";
 import { mockSubscriptionPlans } from "@/lib/mock-data";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
-import type { UserSettings } from "@/types";
+import type { SubscriptionPlan, SubscriptionPricing, UserSettings } from "@/types";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
@@ -27,12 +28,22 @@ export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [pricing, setPricing] = useState<SubscriptionPricing | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     settingsService.getSettings().then(setSettings);
+    // Live prices come from the admin-controlled pricing store, so admin
+    // changes propagate across the whole app instantly (spec 2.11.3)
+    adminService.getPricing().then(setPricing);
   }, []);
+
+  const planPrice = (plan: SubscriptionPlan): number => {
+    if (plan.tier === "silver") return pricing?.silver ?? plan.price;
+    if (plan.tier === "gold") return pricing?.gold ?? plan.price;
+    return 0;
+  };
 
   const update = async (patch: Partial<UserSettings>) => {
     const updated = await settingsService.updateSettings(patch);
@@ -120,9 +131,9 @@ export default function SettingsPage() {
                     {isCurrent && <Badge>{t("settings.currentBadge")}</Badge>}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {plan.price === 0
+                    {planPrice(plan) === 0
                       ? t("common.free")
-                      : `${plan.price.toLocaleString()} ${t("subscription.toman")}`}
+                      : `${planPrice(plan).toLocaleString()} ${t("subscription.toman")}`}
                   </p>
                 </div>
                 {/* Upgrade flow redirects to the payment page in phase 2 */}

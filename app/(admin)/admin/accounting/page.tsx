@@ -99,8 +99,12 @@ export default function AdminAccountingPage() {
                     key={payout.id}
                     className="border-t border-border tabular-nums"
                   >
-                    <td className="px-4 py-3 font-medium">
-                      {payout.artistName}
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{payout.artistName}</p>
+                      {/* Artist id column required by spec 2.11.2 */}
+                      <p dir="ltr" className="mt-0.5 text-xs text-muted-foreground/70">
+                        {payout.artistId}
+                      </p>
                     </td>
                     <td className="px-4 py-3">
                       {formatNumber(payout.uniqueListeners)}

@@ -264,6 +264,7 @@ export const messages = {
     artistsSubtitle: "Review portfolios and approve or reject artists",
     artistStageName: "Stage name",
     artistSampleWorks: "Sample works",
+    viewPortfolio: "View sample works",
     approve: "Approve",
     reject: "Reject",
     rejectTitle: "Reject request",

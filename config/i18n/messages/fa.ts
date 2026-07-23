@@ -265,6 +265,7 @@ export const messages: Messages = {
     artistsSubtitle: "بررسی نمونه‌کارها و تأیید یا رد هنرمندان",
     artistStageName: "نام هنری",
     artistSampleWorks: "نمونه کارها",
+    viewPortfolio: "مشاهده نمونه‌کارها",
     approve: "تأیید",
     reject: "رد",
     rejectTitle: "رد درخواست",

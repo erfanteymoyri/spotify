@@ -97,8 +97,12 @@ export default function AdminTicketsPage() {
                       </span>
                       <Badge variant={meta.variant}>{t(meta.labelKey)}</Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs leading-5 text-muted-foreground">
                       {ticket.userName} · {formatDate(ticket.createdAt)}
+                    </span>
+                    {/* Ticket id column required by spec 2.11.1 */}
+                    <span dir="ltr" className="text-[0.7rem] text-muted-foreground/70">
+                      #{ticket.id.slice(-6)}
                     </span>
                   </button>
                 </li>
@@ -156,7 +160,10 @@ function TicketConversation({
         </Button>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{ticket.subject}</p>
-          <p className="text-xs text-muted-foreground">{ticket.userName}</p>
+          <p className="text-xs leading-5 text-muted-foreground">
+            {ticket.userName} ·{" "}
+            <span dir="ltr">#{ticket.id.slice(-6)}</span>
+          </p>
         </div>
       </div>
 

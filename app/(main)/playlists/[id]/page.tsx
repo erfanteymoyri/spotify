@@ -151,22 +151,22 @@ export default function PlaylistDetailPage() {
       ) : (
         <div className="space-y-1">
           {playlist.tracks.map((track) => (
-            <div key={track.id} className="group/row flex items-center gap-2">
-              <TrackCard
-                track={track}
-                queue={playlist.tracks}
-                className="flex-1"
-              />
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100 hover:text-destructive"
-                aria-label={t("playlists.removeTrack")}
-                onClick={() => handleRemoveTrack(track.id)}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
+            <TrackCard
+              key={track.id}
+              track={track}
+              queue={playlist.tracks}
+              actions={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label={t("playlists.removeTrack")}
+                  onClick={() => handleRemoveTrack(track.id)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              }
+            />
           ))}
         </div>
       )}

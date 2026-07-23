@@ -87,6 +87,8 @@ export const messages: Messages = {
     searchPlaceholder: "جستجو بر اساس نام آهنگ یا هنرمند...",
     sortListeners: "مرتب‌سازی: شنونده",
     sortDate: "مرتب‌سازی: تاریخ انتشار",
+    noResults: "نتیجه‌ای یافت نشد",
+    noResultsHint: "عبارت دیگری را جستجو کنید یا فیلترها را تغییر دهید.",
   },
   playlists: {
     title: "پلی‌لیست‌های شما",
@@ -105,6 +107,8 @@ export const messages: Messages = {
     limitReached: "به سقف مجاز تعداد پلی‌لیست برای اشتراک خود رسیده‌اید.",
     emptyTracksTitle: "این پلی‌لیست خالی است",
     emptyTracksDescription: "از صفحه آلبوم‌ها و تک‌آهنگ‌ها آهنگ مورد علاقه‌تان را اضافه کنید.",
+    addToPlaylist: "افزودن به پلی‌لیست",
+    noPlaylistsShort: "هنوز پلی‌لیستی نساخته‌اید",
   },
   profile: {
     title: "پروفایل",
@@ -154,6 +158,10 @@ export const messages: Messages = {
     playTrack: "پخش {title}",
     close: "بستن پخش‌کننده",
     expand: "نمایش تمام‌صفحه",
+    queue: "صف پخش",
+    queueEmpty: "آهنگی در صف پخش نیست",
+    nowPlaying: "در حال پخش",
+    removeFromQueue: "حذف از صف",
   },
   auth: {
     loginTitle: "ورود به حساب کاربری",

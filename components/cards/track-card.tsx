@@ -14,6 +14,8 @@ interface TrackCardProps {
   queue?: Track[];
   showAlbum?: boolean;
   className?: string;
+  /** Trailing controls (playlist menu, remove button, …) revealed on hover */
+  actions?: React.ReactNode;
 }
 
 export function TrackCard({
@@ -21,6 +23,7 @@ export function TrackCard({
   queue,
   showAlbum = true,
   className,
+  actions,
 }: TrackCardProps) {
   const { t } = useTranslation();
   const playTrack = usePlayerStore((s) => s.playTrack);
@@ -95,6 +98,11 @@ export function TrackCard({
           )}
         </div>
       </div>
+      {actions && (
+        <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity focus-within:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

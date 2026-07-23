@@ -3,6 +3,7 @@ import type {
   ArtistProfile,
   ArtistRequest,
   Gender,
+  SubscriptionTier,
   User,
   UserRole,
 } from "@/types";
@@ -31,7 +32,12 @@ function usernameFromEmail(email: string): string {
 
 function seedUsers(): StoredUser[] {
   const now = new Date().toISOString();
-  const base = (role: UserRole, email: string, displayName: string): StoredUser => ({
+  const base = (
+    role: UserRole,
+    email: string,
+    displayName: string,
+    subscription?: SubscriptionTier,
+  ): StoredUser => ({
     id: createId("user"),
     username: email.split("@")[0] ?? "user",
     displayName,
@@ -39,7 +45,9 @@ function seedUsers(): StoredUser[] {
     password: "demo123456",
     role,
     avatarUrl: null,
-    subscription: role === "admin" ? "gold" : role === "artist" ? "silver" : "free",
+    subscription:
+      subscription ??
+      (role === "admin" ? "gold" : role === "artist" ? "silver" : "free"),
     followersCount: 0,
     followingCount: 0,
     dailyStreamsCount: 0,
@@ -48,6 +56,9 @@ function seedUsers(): StoredUser[] {
 
   return [
     base("listener", "listener@demo.com", "شنونده نمونه"),
+    // Tiered listeners for testing subscription-gated features
+    base("listener", "silver@demo.com", "شنونده نقره‌ای", "silver"),
+    base("listener", "gold@demo.com", "شنونده طلایی", "gold"),
     base("artist", "artist@demo.com", "هنرمند نمونه"),
     base("support", "support@demo.com", "پشتیبان نمونه"),
     base("admin", "admin@demo.com", "مدیر سامانه"),

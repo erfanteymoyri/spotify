@@ -85,6 +85,8 @@ export const messages = {
     searchPlaceholder: "Search by track or artist name...",
     sortListeners: "Sort: listeners",
     sortDate: "Sort: release date",
+    noResults: "No results found",
+    noResultsHint: "Try a different search term or change the filters.",
   },
   playlists: {
     title: "Your playlists",
@@ -103,6 +105,8 @@ export const messages = {
     limitReached: "You have reached the playlist limit for your subscription.",
     emptyTracksTitle: "This playlist is empty",
     emptyTracksDescription: "Add your favorite tracks from the albums & singles page.",
+    addToPlaylist: "Add to playlist",
+    noPlaylistsShort: "You have no playlists yet",
   },
   profile: {
     title: "Profile",
@@ -152,6 +156,10 @@ export const messages = {
     playTrack: "Play {title}",
     close: "Close player",
     expand: "Full screen",
+    queue: "Play queue",
+    queueEmpty: "No tracks in the queue",
+    nowPlaying: "Now playing",
+    removeFromQueue: "Remove from queue",
   },
   auth: {
     loginTitle: "Log in to your account",

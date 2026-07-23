@@ -9,7 +9,7 @@ const PLACEHOLDER_COVER =
 const PLACEHOLDER_AUDIO =
   "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3";
 
-/** The demo artist dashboard mirrors حسن عطایی's published single from the catalog */
+/** The demo artist dashboard mirrors Hassan Ataei's published single from the catalog */
 function seedWorks(): ArtistWork[] {
   const listeners = 120_000;
   const streams = 530_000;

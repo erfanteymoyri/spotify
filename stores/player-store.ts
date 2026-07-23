@@ -26,6 +26,8 @@ interface PlayerState {
   setRepeatMode: (mode: RepeatMode) => void;
   toggleShuffle: () => void;
   toggleExpanded: () => void;
+  /** Drop a track from the upcoming queue (current track stays untouched) */
+  removeFromQueue: (trackId: string) => void;
   /** Stop playback and dismiss the player bar entirely */
   closePlayer: () => void;
   seekTo: (time: number) => void;
@@ -121,6 +123,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setRepeatMode: (mode) => set({ repeatMode: mode }),
   toggleShuffle: () => set((s) => ({ isShuffle: !s.isShuffle })),
   toggleExpanded: () => set((s) => ({ isExpanded: !s.isExpanded })),
+
+  removeFromQueue: (trackId) =>
+    set((s) => {
+      if (s.currentTrack?.id === trackId) return s;
+      return { queue: s.queue.filter((t) => t.id !== trackId) };
+    }),
   closePlayer: () =>
     set({
       currentTrack: null,

@@ -41,17 +41,19 @@ export function ProfileView({
     <FadeIn className="space-y-8 py-4">
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
         <Avatar src={user.avatarUrl} alt={user.displayName} size="lg" />
-        <div className="flex-1 text-center sm:text-right">
-          <p className="text-sm text-muted-foreground">{t("profile.title")}</p>
-          <h1 className="text-4xl font-bold">{user.displayName}</h1>
-          <p className="mt-1 text-muted-foreground">@{user.username}</p>
-          <p className="mt-2 text-sm">
+        <div className="min-w-0 flex-1 text-center sm:text-right">
+          <p className="text-sm leading-6 text-muted-foreground">
+            {t("profile.title")}
+          </p>
+          <h1 className="mt-1 text-4xl font-bold">{user.displayName}</h1>
+          <p className="mt-2 text-muted-foreground">@{user.username}</p>
+          <p className="mt-3 text-sm leading-6">
             {t("common.subscription")}:{" "}
             <span className="font-medium text-primary">
               {t(subscriptionKey[user.subscription])}
             </span>
           </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-4 sm:justify-start">
+          <div className="mt-5 flex flex-wrap justify-center gap-4 sm:justify-start">
             {isOwn ? (
               <Button variant="outline" size="sm" onClick={onEdit}>
                 {t("profile.editProfile")}
@@ -89,7 +91,7 @@ export function ProfileView({
 
       <section>
         <SectionHeader title={t("profile.accountInfo")} />
-        <dl className="grid gap-4 rounded-xl bg-card/40 p-6 sm:grid-cols-2">
+        <dl className="grid gap-x-10 gap-y-6 rounded-xl bg-card/40 p-6 sm:grid-cols-2 sm:p-7">
           <InfoRow label={t("common.email")} value={user.email} />
           <InfoRow label={t("profile.username")} value={user.username} />
           {user.birthDate && (
@@ -124,20 +126,23 @@ function StatCard({
   value: number | string;
 }) {
   return (
-    <div className="rounded-xl bg-card/40 p-4 text-center">
-      <p className="text-2xl font-bold">
+    <div className="rounded-xl bg-card/40 p-5 text-center transition-colors hover:bg-card/60">
+      <p className="text-2xl font-bold tabular-nums">
         {typeof value === "number" ? formatNumber(value) : value}
       </p>
-      <p className="mt-1 text-sm text-muted-foreground">{label}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{label}</p>
     </div>
   );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className="text-sm leading-6 text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-medium">{value}</dd>
+      {/* dir=auto keeps LTR values (emails) readable inside the RTL layout */}
+      <dd dir="auto" className="mt-1.5 leading-7 font-medium break-words">
+        {value}
+      </dd>
     </div>
   );
 }

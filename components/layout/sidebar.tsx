@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -78,12 +79,20 @@ export function Sidebar() {
                 key={href}
                 href={href}
                 className={cn(
-                  "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                  "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:inset-y-2.5 before:start-0 before:w-1 before:rounded-full before:bg-primary"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                 )}
               >
+                {/* Shared-layout indicator glides between the active items */}
+                {isActive && (
+                  <motion.span
+                    layoutId="sidebar-active-indicator"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                    className="absolute inset-y-2.5 start-0 w-1 rounded-full bg-primary"
+                  />
+                )}
                 <Icon
                   className={cn("size-5 shrink-0", isActive && "text-primary")}
                 />

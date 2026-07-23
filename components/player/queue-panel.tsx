@@ -31,7 +31,7 @@ export function QueuePanel({ open, onClose }: QueuePanelProps) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.97 }}
           transition={{ duration: 0.25, ease: [0.25, 0.4, 0.25, 1] }}
-          className="absolute bottom-[calc(100%+0.75rem)] left-3 z-40 flex max-h-[55dvh] w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover/95 shadow-2xl shadow-black/30 backdrop-blur-xl sm:left-4 sm:w-96"
+          className="absolute bottom-[calc(100%+0.75rem)] end-3 z-40 flex max-h-[55dvh] w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover/95 shadow-2xl shadow-black/30 backdrop-blur-xl sm:end-4 sm:w-96"
         >
           <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
             <h3 className="text-sm font-semibold">{t("player.queue")}</h3>

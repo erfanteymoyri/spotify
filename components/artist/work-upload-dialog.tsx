@@ -79,9 +79,9 @@ export function WorkUploadDialog({
     <dialog
       ref={dialogRef}
       onClose={onClose}
-      className="fixed inset-0 z-50 m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-border bg-background p-0 shadow-xl backdrop:bg-black/60 open:flex open:flex-col"
+      className="fixed inset-0 z-50 m-auto w-[calc(100%-2rem)] max-w-2xl rounded-2xl border border-border bg-background p-0 shadow-xl backdrop:bg-black/60 open:flex open:flex-col"
     >
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+      <div className="flex items-center justify-between border-b border-border px-5 py-3">
         <h2 className="text-lg font-semibold">
           {isEditing ? t("artist.editWork") : t("artist.uploadTitle")}
         </h2>
@@ -95,28 +95,31 @@ export function WorkUploadDialog({
         </button>
       </div>
 
-      <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
-        <Field label={t("artist.trackTitle")}>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-        </Field>
+      {/* Two-column compact layout keeps the whole form in view (no scrolling) */}
+      <div className="scrollbar-none max-h-[calc(100dvh-11rem)] space-y-3 overflow-y-auto px-5 py-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label={t("artist.trackTitle")}>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <Field label={t("artist.releaseType")}>
+            <div className="flex gap-2">
+              {(["single", "album"] as ReleaseType[]).map((type) => (
+                <Button
+                  key={type}
+                  type="button"
+                  variant={releaseType === type ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setReleaseType(type)}
+                >
+                  {t(`artist.${type}`)}
+                </Button>
+              ))}
+            </div>
+          </Field>
+        </div>
 
-        <Field label={t("artist.releaseType")}>
-          <div className="flex gap-2">
-            {(["single", "album"] as ReleaseType[]).map((type) => (
-              <Button
-                key={type}
-                type="button"
-                variant={releaseType === type ? "default" : "outline"}
-                size="sm"
-                onClick={() => setReleaseType(type)}
-              >
-                {t(`artist.${type}`)}
-              </Button>
-            ))}
-          </div>
-        </Field>
-
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label={t("artist.genre")}>
             <Input value={genre} onChange={(e) => setGenre(e.target.value)} />
           </Field>
@@ -124,6 +127,7 @@ export function WorkUploadDialog({
             <Input
               type="number"
               inputMode="numeric"
+              dir="ltr"
               value={releaseYear}
               onChange={(e) => setReleaseYear(e.target.value)}
             />
@@ -139,10 +143,15 @@ export function WorkUploadDialog({
         </Field>
 
         <Field label={`${t("artist.lyrics")} (${t("common.optional")})`}>
-          <Textarea value={lyrics} onChange={(e) => setLyrics(e.target.value)} />
+          <Textarea
+            rows={2}
+            className="min-h-0"
+            value={lyrics}
+            onChange={(e) => setLyrics(e.target.value)}
+          />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <FileField
             label={t("artist.audioFile")}
             accept="audio/mpeg,audio/wav,audio/flac,.mp3,.wav,.flac"
@@ -160,7 +169,7 @@ export function WorkUploadDialog({
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-border px-5 py-4">
+      <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
         <Button variant="ghost" onClick={onClose}>
           {t("common.cancel")}
         </Button>
@@ -184,7 +193,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <label className="text-sm font-medium">{label}</label>
       {children}
     </div>

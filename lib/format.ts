@@ -10,6 +10,14 @@ export function formatNumber(num: number, locale = "fa-IR"): string {
   return num.toLocaleString(locale);
 }
 
+/** Compact notation for large stats in tight layouts (e.g. ۱٫۲ میلیون) */
+export function formatCompactNumber(num: number, locale = "fa-IR"): string {
+  return new Intl.NumberFormat(locale, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(num);
+}
+
 /** Format an ISO date string as a short localized date */
 export function formatDate(iso: string, locale = "fa-IR"): string {
   return new Date(iso).toLocaleDateString(locale, {

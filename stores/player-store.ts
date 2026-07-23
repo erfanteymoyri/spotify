@@ -17,7 +17,11 @@ interface PlayerState {
   togglePlay: () => void;
   pause: () => void;
   play: () => void;
-  next: () => void;
+  /**
+   * Advance to the next track. `fromAutoplay` marks calls made when a track
+   * ends naturally — only those honor repeat-one; a manual click always skips.
+   */
+  next: (fromAutoplay?: boolean) => void;
   previous: () => void;
   setProgress: (progress: number) => void;
   setDuration: (duration: number) => void;
@@ -60,33 +64,45 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   pause: () => set({ isPlaying: false }),
   play: () => set({ isPlaying: true }),
 
-  next: () => {
-    const { queue, currentTrack, repeatMode, isShuffle } = get();
+  next: (fromAutoplay = false) => {
+    const { queue, currentTrack, repeatMode, isShuffle, seekTo } = get();
     if (!currentTrack || queue.length === 0) return;
 
-    const currentIndex = queue.findIndex((t) => t.id === currentTrack.id);
-
-    if (repeatMode === "one") {
-      set({ progress: 0, isPlaying: true });
+    // Repeat-one only loops on natural track end; manual skips move on
+    if (fromAutoplay && repeatMode === "one") {
+      seekTo(0);
+      set({ isPlaying: true });
       return;
     }
 
+    const currentIndex = queue.findIndex((t) => t.id === currentTrack.id);
+
     let nextIndex: number;
     if (isShuffle) {
-      nextIndex = Math.floor(Math.random() * queue.length);
+      // Avoid re-picking the current track when there are alternatives
+      do {
+        nextIndex = Math.floor(Math.random() * queue.length);
+      } while (queue.length > 1 && nextIndex === currentIndex);
     } else {
       nextIndex = currentIndex + 1;
       if (nextIndex >= queue.length) {
-        if (repeatMode === "all") {
-          nextIndex = 0;
-        } else {
+        if (repeatMode === "off" && fromAutoplay) {
+          // Queue finished with repeat off — stop playback
           set({ isPlaying: false });
           return;
         }
+        nextIndex = 0;
       }
     }
 
     const nextTrack = queue[nextIndex];
+    if (nextTrack.id === currentTrack.id) {
+      // Same track (single-item queue) — restart the audio instead of reloading
+      seekTo(0);
+      set({ isPlaying: true });
+      return;
+    }
+
     set({
       currentTrack: nextTrack,
       progress: 0,
@@ -96,17 +112,26 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   previous: () => {
-    const { queue, currentTrack, progress } = get();
+    const { queue, currentTrack, progress, seekTo } = get();
     if (!currentTrack) return;
 
-    if (progress > 3) {
-      set({ progress: 0 });
+    // Past the 3-second grace window (or nothing to go back to) — restart
+    if (progress > 3 || queue.length <= 1) {
+      seekTo(0);
+      set({ isPlaying: true });
       return;
     }
 
     const currentIndex = queue.findIndex((t) => t.id === currentTrack.id);
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : queue.length - 1;
     const prevTrack = queue[prevIndex];
+
+    if (prevTrack.id === currentTrack.id) {
+      seekTo(0);
+      set({ isPlaying: true });
+      return;
+    }
+
     set({
       currentTrack: prevTrack,
       progress: 0,

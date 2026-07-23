@@ -9,7 +9,7 @@ import { SectionHeader } from "@/components/shared/section-header";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
-import { formatNumber } from "@/lib/format";
+import { formatCompactNumber } from "@/lib/format";
 import { artistService } from "@/services/artist.service";
 import type { ArtistWork, ArtistWorkInput } from "@/types";
 
@@ -141,25 +141,26 @@ function WorkRow({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 sm:w-72">
+      {/* Compact notation keeps large revenue numbers inside their column */}
+      <div className="grid shrink-0 grid-cols-3 gap-5 sm:w-80">
         <Metric
           icon={<Music2 className="size-4" />}
           label={t("artist.listeners")}
-          value={formatNumber(work.listenersCount ?? 0)}
+          value={formatCompactNumber(work.listenersCount ?? 0)}
         />
         <Metric
           icon={<Radio className="size-4" />}
           label={t("artist.streams")}
-          value={formatNumber(work.streamsCount ?? 0)}
+          value={formatCompactNumber(work.streamsCount ?? 0)}
         />
         <Metric
           icon={<Coins className="size-4" />}
           label={t("artist.revenue")}
-          value={formatNumber(work.revenue)}
+          value={formatCompactNumber(work.revenue)}
         />
       </div>
 
-      <div className="flex gap-2 sm:flex-col lg:flex-row">
+      <div className="flex shrink-0 gap-2 sm:flex-col lg:flex-row">
         <Button
           variant="ghost"
           size="icon-sm"
@@ -191,12 +192,14 @@ function Metric({
   value: string;
 }) {
   return (
-    <div className="text-center">
+    <div className="min-w-0 text-center">
       <span className="flex items-center justify-center gap-1 text-muted-foreground">
         {icon}
       </span>
-      <p className="mt-1 text-sm font-semibold tabular-nums">{value}</p>
-      <p className="text-[0.7rem] text-muted-foreground">{label}</p>
+      <p className="mt-1 truncate text-sm font-semibold tabular-nums">{value}</p>
+      <p className="mt-0.5 text-[0.7rem] leading-4 text-muted-foreground">
+        {label}
+      </p>
     </div>
   );
 }

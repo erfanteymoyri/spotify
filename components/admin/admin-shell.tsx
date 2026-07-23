@@ -137,7 +137,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <main className="flex-1 overflow-y-auto p-4 pb-[env(safe-area-inset-bottom)] md:p-6">
+        <main className="scrollbar-none flex-1 overflow-y-auto p-4 pb-[env(safe-area-inset-bottom)] md:p-6">
           {children}
         </main>
       </div>

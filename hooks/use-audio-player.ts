@@ -39,7 +39,8 @@ export function useAudioPlayer() {
       if (track) {
         musicService.recordStream(track.id, audio.duration);
       }
-      usePlayerStore.getState().next();
+      // Natural end — repeat-one loops here, unlike a manual skip
+      usePlayerStore.getState().next(true);
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);

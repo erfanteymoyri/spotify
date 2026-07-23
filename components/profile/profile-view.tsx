@@ -41,12 +41,22 @@ export function ProfileView({
     <FadeIn className="space-y-8 py-4">
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
         <Avatar src={user.avatarUrl} alt={user.displayName} size="lg" />
-        <div className="min-w-0 flex-1 text-center sm:text-right">
+        <div className="min-w-0 flex-1 text-center sm:text-start">
           <p className="text-sm leading-6 text-muted-foreground">
             {t("profile.title")}
           </p>
-          <h1 className="mt-1 text-4xl font-bold">{user.displayName}</h1>
-          <p className="mt-2 text-muted-foreground">@{user.username}</p>
+          <h1 dir="auto" className="mt-1 text-4xl font-bold">
+            {user.displayName}
+          </h1>
+          {/* System-assigned handle — forced LTR so the @ prefix renders correctly */}
+          <p className="mt-2.5">
+            <span
+              dir="ltr"
+              className="inline-block rounded-full bg-muted/70 px-3 py-1 text-xs font-medium tracking-wide text-muted-foreground"
+            >
+              @{user.username}
+            </span>
+          </p>
           <p className="mt-3 text-sm leading-6">
             {t("common.subscription")}:{" "}
             <span className="font-medium text-primary">

@@ -71,7 +71,7 @@ export default function AdminAccountingPage() {
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[46rem] text-sm">
-            <thead className="bg-muted/50 text-right text-muted-foreground">
+            <thead className="bg-muted/50 text-start text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">
                   {t("admin.payoutArtist")}

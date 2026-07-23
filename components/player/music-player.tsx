@@ -63,6 +63,9 @@ export function MusicPlayer() {
     setRepeatMode(modes[(idx + 1) % modes.length]);
   };
 
+  // Wrap next so click events never leak into its fromAutoplay parameter
+  const handleNext = () => next();
+
   const controlProps = {
     isPlaying,
     progress,
@@ -73,7 +76,7 @@ export function MusicPlayer() {
     isShuffle,
     onTogglePlay: togglePlay,
     onPrevious: previous,
-    onNext: next,
+    onNext: handleNext,
     onSeek: seekTo,
     onVolumeChange: setVolume,
     onToggleMute: toggleMute,
@@ -91,7 +94,7 @@ export function MusicPlayer() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 48 }}
             transition={{ duration: 0.35, ease: [0.25, 0.4, 0.25, 1] }}
-            className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-gradient-to-b from-primary/15 via-card to-background p-4 sm:p-8"
+            className="scrollbar-none fixed inset-0 z-50 flex flex-col overflow-y-auto bg-gradient-to-b from-primary/15 via-card to-background p-4 sm:p-8"
           >
             <div className="flex justify-between">
               <Button
@@ -291,7 +294,7 @@ export function MusicPlayer() {
                       <Play className="size-5 fill-current" />
                     )}
                   </Button>
-                  <Button variant="ghost" size="icon-sm" onClick={next}>
+                  <Button variant="ghost" size="icon-sm" onClick={handleNext}>
                     <SkipForward className="size-4 fill-current" />
                   </Button>
                 </div>

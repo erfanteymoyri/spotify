@@ -41,10 +41,10 @@ export function TopBar() {
       <div className="flex items-center gap-2">
         <Link
           href={routes.profile}
-          className="flex items-center gap-3 rounded-full bg-card/60 py-1.5 pr-4 pl-1.5 transition-colors hover:bg-card"
+          className="flex items-center gap-3 rounded-full bg-card/60 py-1.5 ps-1.5 pe-4 transition-colors hover:bg-card"
         >
           <Avatar src={user.avatarUrl} alt={user.displayName} size="sm" />
-          <div className="hidden text-right sm:block">
+          <div className="hidden text-start sm:block">
             <p className="text-sm font-medium">{user.displayName}</p>
             <p className="text-xs text-muted-foreground">{t(tierKey)}</p>
           </div>

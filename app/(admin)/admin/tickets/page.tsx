@@ -85,7 +85,7 @@ export default function AdminTicketsPage() {
                     type="button"
                     onClick={() => setSelectedId(ticket.id)}
                     className={cn(
-                      "flex w-full flex-col gap-1 rounded-xl border p-3 text-right transition-colors",
+                      "flex w-full flex-col gap-1 rounded-xl border p-3 text-start transition-colors",
                       ticket.id === selectedId
                         ? "border-primary/40 bg-primary/5"
                         : "border-border bg-card/40 hover:bg-card/70",

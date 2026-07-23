@@ -80,12 +80,12 @@ export default function LibraryPage() {
 
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t("library.searchPlaceholder")}
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
-            className="pr-10"
+            className="pe-10"
           />
         </div>
         <select

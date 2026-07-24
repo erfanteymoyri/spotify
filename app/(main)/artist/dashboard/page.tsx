@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { Plus, Pencil, Trash2, Music2, Radio, Coins } from "lucide-react";
+import { AlbumManager } from "@/components/artist/album-manager";
 import { WorkUploadDialog } from "@/components/artist/work-upload-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SectionHeader } from "@/components/shared/section-header";
@@ -15,24 +16,63 @@ import {
   artistService,
   type ArtistWorkFiles,
 } from "@/services/artist.service";
-import type { ArtistWork, ArtistWorkInput } from "@/types";
+import type { ArtistAlbum, ArtistWork, ArtistWorkInput } from "@/types";
+import { cn } from "@/lib/utils";
 
 /** Shown when a work has no artwork of its own and no album to inherit from. */
 const FALLBACK_COVER = "/cover/cover5.jpg";
 
+type StudioTab = "tracks" | "albums";
+
+/** The studio's two lists, always fetched as a pair — see `refresh` below. */
+const loadStudio = () =>
+  Promise.all([artistService.getWorks(), artistService.getAlbums()]);
+
 export default function ArtistDashboardPage() {
   const { t } = useTranslation();
   const [works, setWorks] = useState<ArtistWork[]>([]);
+  const [albums, setAlbums] = useState<ArtistAlbum[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<StudioTab>("tracks");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ArtistWork | null>(null);
 
+  /**
+   * Both lists are refetched together, never one alone: moving a track in or
+   * out of an album changes that track's `albumId` *and* the tracklists and
+   * numbering of the albums involved. Refreshing only the album would leave the
+   * "add a track" picker offering a track that is no longer a single.
+   */
+  const refresh = useCallback(
+    () =>
+      loadStudio().then(([nextWorks, nextAlbums]) => {
+        setWorks(nextWorks);
+        setAlbums(nextAlbums);
+      }),
+    [],
+  );
+
   useEffect(() => {
-    artistService
-      .getWorks()
-      .then(setWorks)
-      .finally(() => setLoading(false));
-  }, []);
+    // `active` guards against a language switch re-running this while the
+    // first request is still in flight, which would otherwise let the older
+    // response land last and overwrite the newer one.
+    let active = true;
+
+    loadStudio()
+      .then(([nextWorks, nextAlbums]) => {
+        if (!active) return;
+        setWorks(nextWorks);
+        setAlbums(nextAlbums);
+      })
+      .catch(() => toast.error(t("common.error")))
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   const openCreate = () => {
     setEditing(null);
@@ -47,14 +87,13 @@ export default function ArtistDashboardPage() {
   const submit = async (input: ArtistWorkInput, files: ArtistWorkFiles) => {
     if (editing) {
       // Metadata only — the audio file of a published work is immutable.
-      const updated = await artistService.updateWork(editing.id, input);
-      setWorks((prev) =>
-        prev.map((work) => (work.id === updated.id ? updated : work)),
-      );
+      await artistService.updateWork(editing.id, input);
     } else {
-      const created = await artistService.uploadWork(input, files);
-      setWorks((prev) => [created, ...prev]);
+      await artistService.uploadWork(input, files);
     }
+    // Publishing into an album changes that album's tracklist too, so take the
+    // server's view of both rather than splicing the response in locally.
+    await refresh();
     setDialogOpen(false);
   };
 
@@ -66,11 +105,16 @@ export default function ArtistDashboardPage() {
       destructive: true,
       onConfirm: async () => {
         await artistService.deleteWork(id);
-        setWorks((prev) => prev.filter((work) => work.id !== id));
         toast.success(t("artist.workDeleted"));
+        await refresh();
       },
     });
   };
+
+  const tabs: { key: StudioTab; label: string }[] = [
+    { key: "tracks", label: t("artist.tabTracks") },
+    { key: "albums", label: t("artist.tabAlbums") },
+  ];
 
   return (
     <div className="space-y-6 py-4">
@@ -78,15 +122,42 @@ export default function ArtistDashboardPage() {
         title={t("artist.manageWorks")}
         subtitle={t("artist.manageWorksSubtitle")}
         action={
-          <Button onClick={openCreate}>
-            <Plus className="size-4" />
-            {t("artist.uploadWork")}
-          </Button>
+          tab === "tracks" ? (
+            <Button onClick={openCreate}>
+              <Plus className="size-4" />
+              {t("artist.uploadWork")}
+            </Button>
+          ) : undefined
         }
       />
 
+      <div
+        role="tablist"
+        className="flex gap-1 rounded-lg border border-border bg-card/40 p-1"
+      >
+        {tabs.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={cn(
+              "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              tab === key
+                ? "bg-primary/15 text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <p className="text-muted-foreground">{t("common.loading")}</p>
+      ) : tab === "albums" ? (
+        <AlbumManager albums={albums} works={works} onChanged={refresh} />
       ) : works.length === 0 ? (
         <EmptyState
           title={t("artist.worksEmptyTitle")}
@@ -114,6 +185,7 @@ export default function ArtistDashboardPage() {
       <WorkUploadDialog
         open={dialogOpen}
         initialWork={editing}
+        albums={albums}
         onClose={() => setDialogOpen(false)}
         onSubmit={submit}
       />
@@ -145,11 +217,17 @@ function WorkRow({
           />
         </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h3 className="truncate font-semibold">{work.title}</h3>
             <Badge variant="muted">{t(`artist.${work.releaseType}`)}</Badge>
+            {work.isEarlyAccess && (
+              <Badge variant="warning" title={t("artist.earlyAccessHint")}>
+                {t("artist.earlyAccess")}
+              </Badge>
+            )}
           </div>
           <p className="truncate text-sm text-muted-foreground">
+            {work.albumName ? `${work.albumName} · ` : ""}
             {work.genre} · {work.releaseYear}
           </p>
         </div>

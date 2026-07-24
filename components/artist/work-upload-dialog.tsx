@@ -4,18 +4,29 @@ import { useEffect, useRef, useState } from "react";
 import { UploadCloud, X } from "lucide-react";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
+import { Select } from "@/ui/select";
 import { Textarea } from "@/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
 import { parseApiError } from "@/lib/parse-api-error";
-import type { ArtistWork, ArtistWorkInput, ReleaseType } from "@/types";
+import type {
+  ArtistAlbum,
+  ArtistWork,
+  ArtistWorkInput,
+  ReleaseType,
+} from "@/types";
 import type { ArtistWorkFiles } from "@/services/artist.service";
 
 interface WorkUploadDialogProps {
   open: boolean;
   initialWork?: ArtistWork | null;
+  /** The artist's existing albums, so a track can be published straight into one. */
+  albums?: ArtistAlbum[];
   onClose: () => void;
   onSubmit: (input: ArtistWorkInput, files: ArtistWorkFiles) => Promise<void>;
 }
+
+/** Sentinel for "make a new album named after this track" in the album picker. */
+const NEW_ALBUM = "";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -39,6 +50,7 @@ function readAudioDuration(file: File): Promise<number> {
 export function WorkUploadDialog({
   open,
   initialWork,
+  albums = [],
   onClose,
   onSubmit,
 }: WorkUploadDialogProps) {
@@ -47,6 +59,7 @@ export function WorkUploadDialog({
 
   const [title, setTitle] = useState("");
   const [releaseType, setReleaseType] = useState<ReleaseType>("single");
+  const [albumId, setAlbumId] = useState<string>(NEW_ALBUM);
   const [genre, setGenre] = useState("");
   const [releaseYear, setReleaseYear] = useState(String(CURRENT_YEAR));
   const [collaborators, setCollaborators] = useState("");
@@ -62,6 +75,7 @@ export function WorkUploadDialog({
     if (open && !dialog.open) {
       setTitle(initialWork?.title ?? "");
       setReleaseType(initialWork?.releaseType ?? "single");
+      setAlbumId(initialWork?.albumId ?? NEW_ALBUM);
       setGenre(initialWork?.genre ?? "");
       setReleaseYear(String(initialWork?.releaseYear ?? CURRENT_YEAR));
       setCollaborators(initialWork?.collaborators.join("، ") ?? "");
@@ -86,6 +100,10 @@ export function WorkUploadDialog({
         {
           title: title.trim(),
           releaseType,
+          // Only meaningful for an album release; sending it for a single
+          // would file a track under an album the artist did not ask for.
+          albumId:
+            releaseType === "album" && albumId !== NEW_ALBUM ? albumId : null,
           genre: genre.trim(),
           releaseYear: Number(releaseYear) || CURRENT_YEAR,
           collaborators: collaborators
@@ -147,6 +165,25 @@ export function WorkUploadDialog({
             </div>
           </Field>
         </div>
+
+        {/* Only when releasing as part of an album, and only when publishing:
+            moving an existing track between albums is the album editor's job,
+            where the tracklist and its numbering are visible. */}
+        {releaseType === "album" && !isEditing && albums.length > 0 && (
+          <Field label={t("artist.uploadIntoAlbum")}>
+            <Select
+              value={albumId}
+              onChange={(e) => setAlbumId(e.target.value)}
+            >
+              <option value={NEW_ALBUM}>{t("artist.newAlbumFromTrack")}</option>
+              {albums.map((album) => (
+                <option key={album.id} value={album.id}>
+                  {album.title}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label={t("artist.genre")}>

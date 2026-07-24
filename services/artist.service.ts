@@ -1,6 +1,12 @@
 import { apiClient, toFormData } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
-import type { ArtistPayout, ArtistWork, ArtistWorkInput } from "@/types";
+import type {
+  ArtistAlbum,
+  ArtistAlbumInput,
+  ArtistPayout,
+  ArtistWork,
+  ArtistWorkInput,
+} from "@/types";
 
 export interface ArtistAnalytics {
   totalStreams: number;
@@ -35,6 +41,9 @@ export const artistService = {
       lyrics: input.lyrics,
       duration: input.duration,
       collaborators: input.collaborators,
+      // Present only when publishing into an album that already exists; the
+      // server creates one otherwise.
+      albumId: input.albumId ?? undefined,
       audio: files.audio ?? undefined,
       cover: files.cover ?? undefined,
     });
@@ -61,6 +70,60 @@ export const artistService = {
 
   async deleteWork(id: string): Promise<void> {
     await apiClient<void>(endpoints.artist.trackById(id), { method: "DELETE" });
+  },
+
+  // --- Albums -------------------------------------------------------------
+  //
+  // Every mutation resolves to the whole album, tracklist included, so the
+  // caller re-renders from the server's answer instead of patching its local
+  // copy — track numbers shift on the server whenever membership changes, and
+  // a client-side guess at the new order would go stale immediately.
+
+  getAlbums(): Promise<ArtistAlbum[]> {
+    return apiClient<ArtistAlbum[]>(endpoints.artist.albums, { method: "GET" });
+  },
+
+  createAlbum(input: ArtistAlbumInput, cover?: File | null): Promise<ArtistAlbum> {
+    return apiClient<ArtistAlbum>(endpoints.artist.albums, {
+      method: "POST",
+      body: toFormData({ ...input, cover: cover ?? undefined }),
+    });
+  },
+
+  updateAlbum(
+    id: string,
+    patch: Partial<ArtistAlbumInput>,
+    cover?: File | null,
+  ): Promise<ArtistAlbum> {
+    return apiClient<ArtistAlbum>(endpoints.artist.albumById(id), {
+      method: "PATCH",
+      body: toFormData({ ...patch, cover: cover ?? undefined }),
+    });
+  },
+
+  /** Removes the album only; its tracks survive as singles. */
+  async deleteAlbum(id: string): Promise<void> {
+    await apiClient<void>(endpoints.artist.albumById(id), { method: "DELETE" });
+  },
+
+  addTrackToAlbum(albumId: string, trackId: string): Promise<ArtistAlbum> {
+    return apiClient<ArtistAlbum>(endpoints.artist.albumTracks(albumId), {
+      method: "POST",
+      body: { trackId },
+    });
+  },
+
+  removeTrackFromAlbum(albumId: string, trackId: string): Promise<ArtistAlbum> {
+    return apiClient<ArtistAlbum>(endpoints.artist.albumTrack(albumId, trackId), {
+      method: "DELETE",
+    });
+  },
+
+  reorderAlbum(albumId: string, trackIds: string[]): Promise<ArtistAlbum> {
+    return apiClient<ArtistAlbum>(endpoints.artist.albumOrder(albumId), {
+      method: "PATCH",
+      body: { trackIds },
+    });
   },
 
   getAnalytics(): Promise<ArtistAnalytics> {

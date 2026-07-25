@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LanguageToggle } from "@/components/shared/language-toggle";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { FadeIn } from "@/components/shared/motion";
@@ -13,84 +14,29 @@ import { Dialog } from "@/ui/dialog";
 import { Slider } from "@/ui/slider";
 import { routes } from "@/config/site";
 import { useTranslation } from "@/hooks/use-translation";
-import { authService } from "@/services/auth.service";
 import { settingsService, userService } from "@/services/user.service";
-import { subscriptionService } from "@/services/subscription.service";
-import { isUpgrade } from "@/config/subscription";
 import { usePlans } from "@/providers/plans-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
-import { parseApiError } from "@/lib/parse-api-error";
-import { toast } from "@/lib/toast";
-import type { SubscriptionTier, UserSettings } from "@/types";
-import { cn } from "@/lib/utils";
+import type { UserSettings } from "@/types";
 
-/**
- * `useSearchParams` opts the subtree into client-side rendering, so the page
- * body lives in its own component behind a Suspense boundary.
- */
 export default function SettingsPage() {
-  const { t } = useTranslation();
-  return (
-    <Suspense
-      fallback={
-        <p className="py-20 text-center text-muted-foreground">
-          {t("common.loading")}
-        </p>
-      }
-    >
-      <SettingsContent />
-    </Suspense>
-  );
-}
-
-function SettingsContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const updateUser = useAuthStore((s) => s.updateUser);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [purchasing, setPurchasing] = useState<SubscriptionTier | null>(null);
 
-  // Prices and limits come straight from the API, so an administrator's change
+  // Names and limits come straight from the API, so an administrator's change
   // is reflected here with no code edit (spec 2.11.3).
-  const { plans } = usePlans();
+  const { planFor } = usePlans();
+  const currentPlan = planFor(user?.subscription ?? "free");
 
   useEffect(() => {
     settingsService.getSettings().then(setSettings);
   }, []);
-
-  /**
-   * The gateway sends the browser back here with `?payment=<id>&status=<state>`.
-   * Re-reading the user picks up the new tier, since the subscription was
-   * granted server-side while we were away.
-   *
-   * The ref makes this run exactly once per return trip: `router.replace` only
-   * clears the query string on a later tick, so without it a re-render in
-   * between would announce the same payment again.
-   */
-  const paymentHandledRef = useRef(false);
-
-  useEffect(() => {
-    const status = searchParams.get("status");
-    if (!status || paymentHandledRef.current) return;
-    paymentHandledRef.current = true;
-
-    if (status === "succeeded") {
-      authService
-        .getMe()
-        .then(updateUser)
-        .then(() => toast.success(t("subscription.paymentSucceeded")))
-        .catch(() => toast.error(t("subscription.paymentFailed")));
-    } else {
-      toast.error(t("subscription.paymentFailed"));
-    }
-    router.replace(routes.settings);
-  }, [searchParams, router, updateUser, t]);
 
   const update = async (patch: Partial<UserSettings>) => {
     const updated = await settingsService.updateSettings(patch);
@@ -98,22 +44,6 @@ function SettingsContent() {
     // Keep the live player in sync with the system volume setting
     if (patch.volume !== undefined) {
       usePlayerStore.getState().setVolume(patch.volume);
-    }
-  };
-
-  /**
-   * Opens a transaction and hands the browser to the payment gateway. The
-   * subscription is granted only once the gateway confirms (spec 3.6).
-   */
-  const handlePurchase = async (tier: Exclude<SubscriptionTier, "free">) => {
-    if (purchasing) return;
-    setPurchasing(tier);
-    try {
-      const { paymentUrl } = await subscriptionService.startCheckout(tier, 1);
-      window.location.assign(paymentUrl);
-    } catch (err) {
-      toast.error(parseApiError(err, t("subscription.checkoutFailed")));
-      setPurchasing(null);
     }
   };
 
@@ -173,60 +103,18 @@ function SettingsContent() {
         <LanguageToggle />
       </section>
 
+      {/* Buying lives on its own page, where the 1/3/6/12-month ladder and its
+          discounts have room. Here we only state where the user stands. */}
       <section className="space-y-4 rounded-xl bg-card/40 p-6">
         <h3 className="font-semibold">{t("settings.currentPlan")}</h3>
-        <div className="grid gap-3">
-          {plans.map((plan) => {
-            const currentTier = user?.subscription ?? "free";
-            const isCurrent = plan.tier === currentTier;
-            // Every paid plan stays buyable, whatever the user is on today:
-            // re-buying the current tier queues another period after the one
-            // running (no paid days lost), and any other tier takes effect at
-            // once. `Subscription.activate` owns both cases server-side.
-            const purchasable = plan.tier !== "free";
-            const actionLabel = isCurrent
-              ? t("settings.renew")
-              : isUpgrade(currentTier, plan.tier)
-                ? t("settings.upgrade")
-                : t("settings.switchPlan");
-            return (
-              <div
-                key={plan.tier}
-                className={cn(
-                  "flex items-center justify-between rounded-lg border p-4 transition-colors",
-                  isCurrent
-                    ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                    : "border-border",
-                )}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{plan.name}</p>
-                    {isCurrent && <Badge>{t("settings.currentBadge")}</Badge>}
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {plan.price === 0
-                      ? t("common.free")
-                      : `${plan.price.toLocaleString()} ${t("subscription.toman")}`}
-                  </p>
-                </div>
-                {purchasable && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={purchasing !== null}
-                    onClick={() =>
-                      handlePurchase(plan.tier as Exclude<SubscriptionTier, "free">)
-                    }
-                  >
-                    {purchasing === plan.tier
-                      ? t("common.loading")
-                      : actionLabel}
-                  </Button>
-                )}
-              </div>
-            );
-          })}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4">
+          <div className="flex items-center gap-2">
+            <p className="font-medium">{currentPlan?.name ?? t("common.free")}</p>
+            <Badge>{t("settings.currentBadge")}</Badge>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href={routes.subscription}>{t("subscription.manage")}</Link>
+          </Button>
         </div>
       </section>
 

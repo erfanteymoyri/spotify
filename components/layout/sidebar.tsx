@@ -12,8 +12,10 @@ import {
   Settings,
   User,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Music,
+  Sparkles,
 } from "lucide-react";
 import { routes } from "@/config/site";
 import { useAuth } from "@/contexts/auth-context";
@@ -33,6 +35,8 @@ export function Sidebar() {
     { href: routes.playlists, label: t("nav.playlists"), icon: ListMusic },
     { href: routes.notifications, label: t("nav.notifications"), icon: Bell },
     { href: routes.profile, label: t("nav.profile"), icon: User },
+    { href: routes.subscription, label: t("nav.subscription"), icon: Sparkles },
+    { href: routes.support, label: t("nav.support"), icon: LifeBuoy },
     { href: routes.settings, label: t("nav.settings"), icon: Settings },
   ];
 

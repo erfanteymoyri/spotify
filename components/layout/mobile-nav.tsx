@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   Library,
+  LifeBuoy,
   ListMusic,
   User,
   Music,
@@ -35,12 +36,16 @@ export function MobileNav() {
           }
         : null;
 
+  // The bar holds five items comfortably, so support only takes the free slot
+  // when there is no role-specific destination competing for it.
   const items = [
     { href: routes.home, icon: Home, label: t("nav.home") },
     { href: routes.library, icon: Library, label: t("nav.libraryShort") },
     { href: routes.playlists, icon: ListMusic, label: t("nav.playlistShort") },
     { href: routes.profile, icon: User, label: t("nav.profile") },
-    ...(roleItem ? [roleItem] : []),
+    ...(roleItem
+      ? [roleItem]
+      : [{ href: routes.support, icon: LifeBuoy, label: t("nav.support") }]),
   ];
 
   return (

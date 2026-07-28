@@ -13,6 +13,8 @@ export function makeTrack(id: string, overrides: Partial<Track> = {}): Track {
     audioUrl: `/audio/${id}.mp3`,
     duration: 200,
     publishedAt: "2025-01-01T00:00:00Z",
+    isEarlyAccess: false,
+    trackNumber: 1,
     ...overrides,
   };
 }

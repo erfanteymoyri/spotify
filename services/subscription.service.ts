@@ -1,6 +1,7 @@
 import { apiClient } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
 import type {
+  BillingOption,
   Payment,
   Subscription,
   SubscriptionPlan,
@@ -34,6 +35,21 @@ export const subscriptionService = {
    */
   getPlans(): Promise<SubscriptionPlan[]> {
     return apiClient<SubscriptionPlan[]>(endpoints.subscriptions.plans, {
+      method: "GET",
+      anonymous: true,
+    });
+  },
+
+  /**
+   * The purchasable durations, their discounts and the resolved total per tier.
+   *
+   * Deliberately server-computed: multiplying the monthly price by the number
+   * of months and applying a percentage in the browser would be a second
+   * implementation of the pricing rule, and the one the user is shown must be
+   * the one they are charged.
+   */
+  getBillingOptions(): Promise<BillingOption[]> {
+    return apiClient<BillingOption[]>(endpoints.subscriptions.billingOptions, {
       method: "GET",
       anonymous: true,
     });

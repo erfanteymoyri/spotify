@@ -20,6 +20,12 @@ const mediaIsLocal = ["localhost", "127.0.0.1", "::1", "minio"].includes(
 const nextConfig: NextConfig = {
   // Produces a self-contained server bundle for the Docker runtime stage.
   output: "standalone",
+  experimental: {
+    // "radix-ui" and "motion" are barrel packages; without this Next ships
+    // every submodule to the client instead of just what's imported,
+    // bloating the bundle and slowing first paint/hydration.
+    optimizePackageImports: ["radix-ui", "motion"],
+  },
   images: {
     unoptimized: mediaIsLocal,
     remotePatterns: [

@@ -9,8 +9,10 @@ import { SectionHeader } from "@/components/shared/section-header";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { useAuth } from "@/contexts/auth-context";
-import { canCreatePlaylist, subscriptionLimits } from "@/config/subscription";
+import { canCreatePlaylist } from "@/config/subscription";
 import { useTranslation } from "@/hooks/use-translation";
+import { parseApiError } from "@/lib/parse-api-error";
+import { usePlan } from "@/providers/plans-provider";
 import { playlistService } from "@/services/music.service";
 import type { Playlist } from "@/types";
 
@@ -24,14 +26,16 @@ export default function PlaylistsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const userId = user?.id;
-  const tier = user?.subscription ?? "free";
-  const limit = subscriptionLimits[tier].maxPlaylists;
-  const canCreate = canCreatePlaylist(tier, playlists.length);
+  // The quota comes from the plan the API serves, so an admin re-scoping a
+  // tier changes this hint with no frontend release (spec 2.11.3).
+  const plan = usePlan(user?.subscription);
+  const limit = plan?.maxPlaylists ?? null;
+  const canCreate = canCreatePlaylist(plan, playlists.length);
 
   useEffect(() => {
     if (!userId) return;
     playlistService
-      .getPlaylists(userId)
+      .getPlaylists()
       .then(setPlaylists)
       .finally(() => setLoading(false));
   }, [userId]);
@@ -40,15 +44,14 @@ export default function PlaylistsPage() {
     if (!newName.trim() || !userId) return;
     setError(null);
     try {
-      const created = await playlistService.createPlaylist(
-        userId,
-        newName.trim(),
-      );
+      const created = await playlistService.createPlaylist(newName.trim());
       setPlaylists((prev) => [...prev, created]);
       setNewName("");
       setShowCreate(false);
-    } catch {
-      setError(t("playlists.limitReached"));
+    } catch (err) {
+      // The server is the real gate; it answers PLAYLIST_LIMIT_REACHED or a
+      // field error (e.g. a duplicate name), and both are worth showing.
+      setError(parseApiError(err, t("playlists.limitReached")));
     }
   };
 

@@ -21,7 +21,11 @@ export interface User {
   id: string;
   username: string;
   displayName: string;
-  email: string;
+  /**
+   * Only on your own account. Public profiles omit it, since no screen shows
+   * someone else's address and narrow reads are the rule (spec 3.3).
+   */
+  email?: string;
   role: UserRole;
   avatarUrl: string | null;
   subscription: SubscriptionTier;
@@ -31,6 +35,8 @@ export interface User {
   birthDate?: string;
   gender?: Gender;
   createdAt: string;
+  /** Whether the signed-in viewer follows this user (public profiles only). */
+  isFollowing?: boolean;
 }
 
 export interface ArtistProfile {
@@ -137,7 +143,11 @@ export interface ArtistWork extends Track {
   revenue: number;
 }
 
-/** Payload the artist upload form produces before the backend assigns ids */
+/**
+ * Metadata the artist upload form produces. The audio and cover files travel
+ * alongside it as multipart parts, not as URLs — the backend assigns those once
+ * the upload lands in object storage.
+ */
 export interface ArtistWorkInput {
   title: string;
   releaseType: ReleaseType;
@@ -145,8 +155,8 @@ export interface ArtistWorkInput {
   releaseYear: number;
   collaborators: string[];
   lyrics: string;
-  coverUrl: string;
-  audioUrl: string;
+  /** Length in seconds, read from the selected audio file. */
+  duration?: number;
 }
 
 export type TicketStatus = "open" | "answered" | "closed";
@@ -208,4 +218,33 @@ export interface AdminStats {
   monthlyRevenue: number;
   totalUsers: number;
   totalArtists: number;
+}
+
+export type SubscriptionStatus = "active" | "expired" | "cancelled";
+
+export interface Subscription {
+  id: string;
+  plan: SubscriptionPlan;
+  durationMonths: number;
+  startsAt: string;
+  expiresAt: string;
+  status: SubscriptionStatus;
+  pricePaid: number;
+  daysRemaining: number;
+  isActive: boolean;
+}
+
+/** Spec 3.6 tracks all three gateway outcomes. */
+export type PaymentStatus = "pending" | "succeeded" | "failed";
+
+export interface Payment {
+  id: string;
+  planTier: SubscriptionTier;
+  durationMonths: number;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  failureReason: string;
+  createdAt: string;
+  settledAt: string | null;
 }

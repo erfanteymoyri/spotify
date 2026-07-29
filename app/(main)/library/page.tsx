@@ -33,41 +33,39 @@ export default function LibraryPage() {
     setLoading(true);
   };
 
+  // Debounced so typing does not fire one request per keystroke.
   useEffect(() => {
     let cancelled = false;
-
-    Promise.all([
-      musicService.searchTracks(query, sort),
-      musicService.getAlbums(),
-    ])
-      .then(([trackResult, albumList]) => {
-        if (cancelled) return;
-        setTracks(trackResult.data);
-        setAlbums(albumList);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const timer = setTimeout(() => {
+      // Searching and sorting both happen server-side (spec 2.8), which also
+      // keeps the gold-only early-access embargo enforced on the results.
+      Promise.all([
+        musicService.searchTracks(query, sort),
+        musicService.getAlbums(query),
+      ])
+        .then(([trackResult, albumList]) => {
+          if (cancelled) return;
+          setTracks(trackResult.data);
+          setAlbums(albumList);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 300);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [query, sort]);
 
-  // Albums honor the same search & sort criteria as tracks (spec 2.8)
   const visibleAlbums = useMemo(() => {
-    const q = query.trim();
-    const filtered = albums.filter(
-      (a) => q === "" || a.title.includes(q) || a.artistName.includes(q),
+    if (sort !== "date") return albums;
+    return [...albums].sort(
+      (a, b) =>
+        new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime(),
     );
-    if (sort === "date") {
-      return [...filtered].sort(
-        (a, b) =>
-          new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime(),
-      );
-    }
-    return filtered;
-  }, [albums, query, sort]);
+  }, [albums, sort]);
 
   const noResults = !loading && visibleAlbums.length === 0 && tracks.length === 0;
 

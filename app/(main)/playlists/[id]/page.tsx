@@ -38,7 +38,7 @@ export default function PlaylistDetailPage() {
   useEffect(() => {
     if (!id || !userId) return;
     playlistService
-      .getPlaylist(userId, id)
+      .getPlaylist(id)
       .then(setPlaylist)
       .catch(() => setNotFound(true));
   }, [id, userId]);
@@ -48,7 +48,6 @@ export default function PlaylistDetailPage() {
     setSaving(true);
     try {
       const updated = await playlistService.renamePlaylist(
-        userId,
         playlist.id,
         renameValue.trim(),
       );
@@ -67,7 +66,7 @@ export default function PlaylistDetailPage() {
       cancelLabel: t("common.cancel"),
       destructive: true,
       onConfirm: async () => {
-        await playlistService.deletePlaylist(userId, playlist.id);
+        await playlistService.deletePlaylist(playlist.id);
         toast.success(t("playlists.deleted"));
         router.replace(routes.playlists);
       },
@@ -77,18 +76,11 @@ export default function PlaylistDetailPage() {
   const handleRemoveTrack = async (trackId: string) => {
     if (!userId || !playlist) return;
     const updated = await playlistService.removeTrackFromPlaylist(
-      userId,
       playlist.id,
       trackId,
     );
-    setPlaylist((prev) =>
-      prev
-        ? {
-            ...prev,
-            tracks: prev.tracks.filter((t) => updated.trackIds.includes(t.id)),
-          }
-        : prev,
-    );
+    // The response already carries the resolved tracks, so no refetch is needed.
+    setPlaylist((prev) => (prev ? { ...prev, tracks: updated.tracks } : prev));
     toast.success(t("playlists.trackRemoved"));
   };
 

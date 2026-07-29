@@ -15,9 +15,13 @@ export function useLogout() {
   const logout = async () => {
     if (loading) return;
     setLoading(true);
-    const { token, logout: clearAuth } = useAuthStore.getState();
+    const { token, refreshToken, logout: clearAuth } = useAuthStore.getState();
     try {
-      if (token) await authService.logout(token);
+      // Best-effort revocation: a failure here must not trap the user in a
+      // signed-in UI, so the local session is cleared either way.
+      if (token) await authService.logout(refreshToken);
+    } catch {
+      // ignored on purpose — see above
     } finally {
       // Stop any playing audio before leaving the authenticated area
       usePlayerStore.getState().closePlayer();

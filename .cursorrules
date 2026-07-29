@@ -14,9 +14,17 @@ Always respond and write comments in Persian (فارسی روان).
 - Always adapt your implementation to the specific user requirements given in the current chat session while maintaining these global rules.
 
 ## 📂 Data Fetching & Backend Integration
-- **Backend Directory Check:** Always verify if the required endpoints/services are implemented in the `spotify-backend` directory.
-- **API Mode:** If the backend for the feature exists in `spotify-backend`, connect directly using Axios via `@/services/http.ts`. Never use raw `fetch`.
-- **Mock Mode:** If the backend for the feature is not yet ready in `spotify-backend`, mock the dynamic data (users, tracks, playlists, etc.) using the browser's **Local Storage** to ensure the app is fully functional in Phase 1.
+- **No mock data.** Every screen reads from the Django API. `lib/mock-data.ts` and
+  the Local Storage stores from phase 1 have been removed — do not reintroduce them.
+- **One integration point:** components call a service in `services/`; only those
+  services call `apiClient` from `@/api/client`. Never `fetch` from a component.
+- **Endpoints live in `api/endpoints.ts`;** the live contract is the OpenAPI
+  document at `http://localhost:8000/api/docs`. Check it before inventing a route.
+- **Business rules belong to the server.** Client-side checks (quota reached,
+  feature unavailable) are affordances only; always surface the error the API
+  returns, and never treat a client check as the gate.
+- **Tier limits come from `GET /subscriptions/plans`,** exposed through
+  `usePlan()` / `usePlans()`. Do not hard-code table 1.
 
 ## 🛠 Tech Stack Constraints
 - **Framework:** Next.js 16 (App Router) / React 19.

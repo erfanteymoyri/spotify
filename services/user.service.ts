@@ -1,100 +1,70 @@
 import { apiClient } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
-import { backendCapabilities } from "@/config/backend";
-import { authMockStorage } from "@/lib/auth-mock-storage";
-import { followStorage } from "@/lib/follow-storage";
-import { delay, shouldUseBackend } from "@/lib/service-utils";
-import type { Gender, User } from "@/types";
+import type { Gender, User, UserSettings } from "@/types";
 
 export interface UpdateProfilePayload {
   displayName?: string;
   birthDate?: string;
   gender?: Gender;
-  /** Data URL in mock mode; uploaded separately via multipart in phase 2 */
-  avatarUrl?: string | null;
 }
 
 export interface FollowResult {
   isFollowing: boolean;
-  /** Current user with the refreshed followingCount */
+  /** The viewer, with a refreshed followingCount */
   currentUser: User;
-  /** Target user with the refreshed followersCount */
+  /** The followed user, with a refreshed followersCount */
   target: User;
 }
 
 export const userService = {
-  /** GET /users/:id — public user profile */
-  async getUserById(id: string): Promise<User> {
-    if (shouldUseBackend(backendCapabilities.users.profile)) {
-      return apiClient<User>(endpoints.users.byId(id), { method: "GET" });
-    }
-
-    await delay(200);
-    const user = authMockStorage.getPublicById(id);
-    if (!user) throw new Error("USER_NOT_FOUND");
-    return user;
+  getUserById(id: string): Promise<User> {
+    return apiClient<User>(endpoints.users.byId(id), { method: "GET" });
   },
 
-  /** PATCH /users/me — edit profile fields (avatar restricted for free tier) */
-  async updateProfile(
-    userId: string,
-    payload: UpdateProfilePayload,
-  ): Promise<User> {
-    if (shouldUseBackend(backendCapabilities.users.profile)) {
-      return apiClient<User>(endpoints.users.updateMe, {
-        method: "PATCH",
-        body: payload,
-      });
-    }
-
-    await delay(300);
-    return authMockStorage.updateUser(userId, payload);
-  },
-
-  /** DELETE /users/me — permanently delete the account (settings page) */
-  async deleteAccount(userId: string): Promise<void> {
-    if (shouldUseBackend(backendCapabilities.users.profile)) {
-      await apiClient<void>(endpoints.users.deleteMe, { method: "DELETE" });
-      return;
-    }
-
-    await delay(300);
-    authMockStorage.deleteUser(userId);
-  },
-
-  async isFollowing(currentUserId: string, targetId: string): Promise<boolean> {
-    await delay(100);
-    return followStorage.isFollowing(currentUserId, targetId);
-  },
-
-  /** POST|DELETE /users/:id/follow — returns both users with updated counts */
-  async setFollowing(
-    currentUserId: string,
-    targetId: string,
-    follow: boolean,
-  ): Promise<FollowResult> {
-    if (shouldUseBackend(backendCapabilities.users.follow)) {
-      return apiClient<FollowResult>(endpoints.users.follow(targetId), {
-        method: follow ? "POST" : "DELETE",
-      });
-    }
-
-    await delay(250);
-    const current = authMockStorage.findById(currentUserId);
-    const target = authMockStorage.findById(targetId);
-    if (!current || !target) throw new Error("USER_NOT_FOUND");
-
-    // Only shift counts when the stored relation actually changed
-    const changed = followStorage.set(currentUserId, targetId, follow);
-    const delta = changed ? (follow ? 1 : -1) : 0;
-
-    const currentUser = authMockStorage.updateUser(currentUserId, {
-      followingCount: Math.max(0, current.followingCount + delta),
+  updateProfile(payload: UpdateProfilePayload): Promise<User> {
+    return apiClient<User>(endpoints.users.me, {
+      method: "PATCH",
+      body: payload,
     });
-    const targetUser = authMockStorage.updateUser(targetId, {
-      followersCount: Math.max(0, target.followersCount + delta),
-    });
+  },
 
-    return { isFollowing: follow, currentUser, target: targetUser };
+  /**
+   * Multipart, so it cannot go through the JSON path. The server rejects this
+   * for free-tier accounts (table 1).
+   */
+  uploadAvatar(file: File): Promise<User> {
+    const form = new FormData();
+    form.append("avatar", file);
+    return apiClient<User>(endpoints.users.avatar, {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  removeAvatar(): Promise<User> {
+    return apiClient<User>(endpoints.users.avatar, { method: "DELETE" });
+  },
+
+  async deleteAccount(): Promise<void> {
+    await apiClient<void>(endpoints.users.me, { method: "DELETE" });
+  },
+
+  setFollowing(targetId: string, follow: boolean): Promise<FollowResult> {
+    return apiClient<FollowResult>(endpoints.users.follow(targetId), {
+      method: follow ? "POST" : "DELETE",
+    });
+  },
+};
+
+export const settingsService = {
+  getSettings(): Promise<UserSettings> {
+    return apiClient<UserSettings>(endpoints.settings.root, { method: "GET" });
+  },
+
+  updateSettings(data: Partial<UserSettings>): Promise<UserSettings> {
+    return apiClient<UserSettings>(endpoints.settings.root, {
+      method: "PATCH",
+      body: data,
+    });
   },
 };

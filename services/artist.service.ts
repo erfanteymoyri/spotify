@@ -1,60 +1,75 @@
-import { apiClient } from "@/api/client";
+import { apiClient, toFormData } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
-import { backendCapabilities } from "@/config/backend";
-import { artistWorksStorage } from "@/lib/artist-works-storage";
-import { delay, shouldUseBackend } from "@/lib/service-utils";
-import type { ArtistWork, ArtistWorkInput } from "@/types";
+import type { ArtistPayout, ArtistWork, ArtistWorkInput } from "@/types";
+
+export interface ArtistAnalytics {
+  totalStreams: number;
+  totalListeners: number;
+  trackCount: number;
+  albumCount: number;
+  followersCount: number;
+  revenue: number;
+}
+
+/** Files the upload dialog collects alongside the metadata. */
+export interface ArtistWorkFiles {
+  audio?: File | null;
+  cover?: File | null;
+}
 
 export const artistService = {
-  /** GET /artist/works — the signed-in artist's published works */
-  async getWorks(): Promise<ArtistWork[]> {
-    if (shouldUseBackend(backendCapabilities.artist.works)) {
-      return apiClient<ArtistWork[]>(endpoints.artist.works, { method: "GET" });
-    }
-
-    await delay(300);
-    return artistWorksStorage.getWorks();
+  getWorks(): Promise<ArtistWork[]> {
+    return apiClient<ArtistWork[]>(endpoints.artist.works, { method: "GET" });
   },
 
-  /** POST /artist/tracks — multipart upload (audio, cover, metadata) */
-  async uploadWork(input: ArtistWorkInput): Promise<ArtistWork> {
-    if (shouldUseBackend(backendCapabilities.artist.upload)) {
-      return apiClient<ArtistWork>(endpoints.artist.uploadTrack, {
-        method: "POST",
-        body: input,
-      });
-    }
+  /**
+   * Multipart upload: the audio file, an optional cover, and the metadata.
+   * Choosing `releaseType: "album"` makes the server create the album.
+   */
+  uploadWork(input: ArtistWorkInput, files: ArtistWorkFiles): Promise<ArtistWork> {
+    const form = toFormData({
+      title: input.title,
+      releaseType: input.releaseType,
+      genre: input.genre,
+      releaseYear: input.releaseYear,
+      lyrics: input.lyrics,
+      duration: input.duration,
+      collaborators: input.collaborators,
+      audio: files.audio ?? undefined,
+      cover: files.cover ?? undefined,
+    });
 
-    await delay(500);
-    return artistWorksStorage.createWork(input);
+    return apiClient<ArtistWork>(endpoints.artist.tracks, {
+      method: "POST",
+      body: form,
+    });
   },
 
-  /** PATCH /artist/tracks/:id — edit metadata of a published work */
-  async updateWork(
+  /**
+   * Metadata only — the audio file is immutable by design, since analytics,
+   * playlists and payouts all reference the existing recording.
+   */
+  updateWork(
     id: string,
-    patch: Partial<ArtistWorkInput>,
-  ): Promise<ArtistWork | undefined> {
-    if (shouldUseBackend(backendCapabilities.artist.upload)) {
-      return apiClient<ArtistWork>(endpoints.artist.updateTrack(id), {
-        method: "PATCH",
-        body: patch,
-      });
-    }
-
-    await delay(300);
-    return artistWorksStorage.updateWork(id, patch);
+    patch: Partial<Omit<ArtistWorkInput, "releaseType">>,
+  ): Promise<ArtistWork> {
+    return apiClient<ArtistWork>(endpoints.artist.trackById(id), {
+      method: "PATCH",
+      body: patch,
+    });
   },
 
-  /** DELETE /artist/tracks/:id */
   async deleteWork(id: string): Promise<void> {
-    if (shouldUseBackend(backendCapabilities.artist.upload)) {
-      await apiClient<void>(endpoints.artist.deleteTrack(id), {
-        method: "DELETE",
-      });
-      return;
-    }
+    await apiClient<void>(endpoints.artist.trackById(id), { method: "DELETE" });
+  },
 
-    await delay(300);
-    artistWorksStorage.deleteWork(id);
+  getAnalytics(): Promise<ArtistAnalytics> {
+    return apiClient<ArtistAnalytics>(endpoints.artist.analytics, {
+      method: "GET",
+    });
+  },
+
+  getPayouts(): Promise<ArtistPayout[]> {
+    return apiClient<ArtistPayout[]>(endpoints.artist.payouts, { method: "GET" });
   },
 };

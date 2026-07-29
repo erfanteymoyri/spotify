@@ -32,24 +32,19 @@ export default function UserProfilePage() {
     if (!id || isOwnProfile) return;
     userService
       .getUserById(id)
-      .then(setProfile)
+      .then((user) => {
+        setProfile(user);
+        // The public profile carries the follow state, so no second request.
+        setIsFollowing(Boolean(user.isFollowing));
+      })
       .catch(() => setNotFound(true));
   }, [id, isOwnProfile]);
-
-  useEffect(() => {
-    if (!id || !currentUserId || isOwnProfile) return;
-    userService.isFollowing(currentUserId, id).then(setIsFollowing);
-  }, [id, currentUserId, isOwnProfile]);
 
   const handleToggleFollow = async () => {
     if (!currentUserId || !profile || followLoading) return;
     setFollowLoading(true);
     try {
-      const result = await userService.setFollowing(
-        currentUserId,
-        profile.id,
-        !isFollowing,
-      );
+      const result = await userService.setFollowing(profile.id, !isFollowing);
       setIsFollowing(result.isFollowing);
       setProfile(result.target);
       updateUser(result.currentUser);

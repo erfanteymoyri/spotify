@@ -6,16 +6,35 @@ import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Textarea } from "@/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
+import { parseApiError } from "@/lib/parse-api-error";
 import type { ArtistWork, ArtistWorkInput, ReleaseType } from "@/types";
+import type { ArtistWorkFiles } from "@/services/artist.service";
 
 interface WorkUploadDialogProps {
   open: boolean;
   initialWork?: ArtistWork | null;
   onClose: () => void;
-  onSubmit: (input: ArtistWorkInput) => Promise<void>;
+  onSubmit: (input: ArtistWorkInput, files: ArtistWorkFiles) => Promise<void>;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
+
+/**
+ * Reads a track's length from the file itself, so the artist does not have to
+ * type it and the stored duration always matches the audio.
+ */
+function readAudioDuration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const audio = new Audio(url);
+    const done = (seconds: number) => {
+      URL.revokeObjectURL(url);
+      resolve(Math.round(seconds) || 0);
+    };
+    audio.addEventListener("loadedmetadata", () => done(audio.duration));
+    audio.addEventListener("error", () => done(0));
+  });
+}
 
 export function WorkUploadDialog({
   open,
@@ -32,9 +51,10 @@ export function WorkUploadDialog({
   const [releaseYear, setReleaseYear] = useState(String(CURRENT_YEAR));
   const [collaborators, setCollaborators] = useState("");
   const [lyrics, setLyrics] = useState("");
-  const [audioName, setAudioName] = useState("");
-  const [coverName, setCoverName] = useState("");
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -46,33 +66,42 @@ export function WorkUploadDialog({
       setReleaseYear(String(initialWork?.releaseYear ?? CURRENT_YEAR));
       setCollaborators(initialWork?.collaborators.join("، ") ?? "");
       setLyrics(initialWork?.lyrics ?? "");
-      setAudioName("");
-      setCoverName("");
+      setAudioFile(null);
+      setCoverFile(null);
+      setError(null);
       dialog.showModal();
     }
     if (!open && dialog.open) dialog.close();
   }, [open, initialWork]);
 
   const isEditing = Boolean(initialWork);
-  const canSubmit = title.trim() && genre.trim() && (isEditing || audioName);
+  const canSubmit = title.trim() && genre.trim() && (isEditing || audioFile);
 
   const submit = async () => {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
-    await onSubmit({
-      title: title.trim(),
-      releaseType,
-      genre: genre.trim(),
-      releaseYear: Number(releaseYear) || CURRENT_YEAR,
-      collaborators: collaborators
-        .split(/[,،]/)
-        .map((name) => name.trim())
-        .filter(Boolean),
-      lyrics,
-      coverUrl: "",
-      audioUrl: "",
-    });
-    setSubmitting(false);
+    setError(null);
+    try {
+      await onSubmit(
+        {
+          title: title.trim(),
+          releaseType,
+          genre: genre.trim(),
+          releaseYear: Number(releaseYear) || CURRENT_YEAR,
+          collaborators: collaborators
+            .split(/[,،]/)
+            .map((name) => name.trim())
+            .filter(Boolean),
+          lyrics,
+          duration: audioFile ? await readAudioDuration(audioFile) : undefined,
+        },
+        { audio: audioFile, cover: coverFile },
+      );
+    } catch (err) {
+      setError(parseApiError(err, t("artist.uploadFailed")));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -155,18 +184,20 @@ export function WorkUploadDialog({
           <FileField
             label={t("artist.audioFile")}
             accept="audio/mpeg,audio/wav,audio/flac,.mp3,.wav,.flac"
-            selectedName={audioName}
+            file={audioFile}
             selectedLabel={t("artist.audioSelected")}
-            onSelect={setAudioName}
+            onSelect={setAudioFile}
           />
           <FileField
             label={t("artist.coverImage")}
             accept="image/*"
-            selectedName={coverName}
+            file={coverFile}
             selectedLabel={t("artist.coverSelected")}
-            onSelect={setCoverName}
+            onSelect={setCoverFile}
           />
         </div>
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
 
       <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
@@ -203,16 +234,17 @@ function Field({
 function FileField({
   label,
   accept,
-  selectedName,
+  file,
   selectedLabel,
   onSelect,
 }: {
   label: string;
   accept: string;
-  selectedName: string;
+  file: File | null;
   selectedLabel: string;
-  onSelect: (name: string) => void;
+  onSelect: (file: File | null) => void;
 }) {
+  const selectedName = file?.name ?? "";
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
@@ -225,7 +257,7 @@ function FileField({
           type="file"
           accept={accept}
           className="hidden"
-          onChange={(e) => onSelect(e.target.files?.[0]?.name ?? "")}
+          onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
         />
       </label>
     </div>

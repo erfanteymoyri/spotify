@@ -34,15 +34,11 @@ export function LoginForm() {
 
     setLoading(true);
     try {
-      const { user, token } = await authService.login(email, password);
-      setAuth(user, token);
+      const { user, token, refresh } = await authService.login(email, password);
+      setAuth(user, token, refresh);
       router.push(getAuthRedirectPath(user.role));
     } catch (err) {
-      if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {
-        setError(t("auth.loginFailed"));
-      } else {
-        setError(parseApiError(err, t("auth.loginFailed")));
-      }
+      setError(parseApiError(err, t("auth.loginFailed")));
     } finally {
       setLoading(false);
     }

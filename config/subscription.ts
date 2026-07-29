@@ -1,42 +1,38 @@
 import type { SubscriptionPlan, SubscriptionTier } from "@/types";
 
-/** Subscription limits per project spec (table 1) */
-export const subscriptionLimits: Record<
-  SubscriptionTier,
-  Omit<SubscriptionPlan, "tier" | "name" | "price" | "currency">
-> = {
-  free: {
-    maxDailyStreams: 60,
-    maxPlaylists: 6,
-    canUploadAvatar: false,
-    canDownload: false,
-    hasEarlyAccess: false,
-    canViewStats: false,
-  },
-  silver: {
-    // Table 1: silver tier has unlimited daily streams (only playlists are capped)
-    maxDailyStreams: null,
-    maxPlaylists: 100,
-    canUploadAvatar: true,
-    canDownload: true,
-    hasEarlyAccess: false,
-    canViewStats: false,
-  },
-  gold: {
-    maxDailyStreams: null,
-    maxPlaylists: null,
-    canUploadAvatar: true,
-    canDownload: true,
-    hasEarlyAccess: true,
-    canViewStats: true,
-  },
-};
+/**
+ * Pure helpers over a plan.
+ *
+ * The limits themselves are **not** defined here any more — they come from
+ * `GET /subscriptions/plans`, so table 1 lives in the database and an
+ * administrator can re-scope a tier without a frontend release. These functions
+ * only interpret a plan the server already sent.
+ *
+ * `null` consistently means "unlimited", matching `SubscriptionPlan`.
+ */
 
 export function canCreatePlaylist(
-  tier: SubscriptionTier,
+  plan: SubscriptionPlan | null | undefined,
   currentCount: number,
 ): boolean {
-  const limit = subscriptionLimits[tier].maxPlaylists;
-  if (limit === null) return true;
-  return currentCount < limit;
+  // Unknown plan (still loading): allow the attempt. The server is the real
+  // gate and answers PLAYLIST_LIMIT_REACHED if it is not, which the UI surfaces.
+  if (!plan) return true;
+  if (plan.maxPlaylists === null) return true;
+  return currentCount < plan.maxPlaylists;
+}
+
+export function formatLimit(limit: number | null, unlimitedLabel: string): string {
+  return limit === null ? unlimitedLabel : String(limit);
+}
+
+/** Free < silver < gold — used to decide whether a plan is an upgrade. */
+const TIER_ORDER: Record<SubscriptionTier, number> = {
+  free: 0,
+  silver: 1,
+  gold: 2,
+};
+
+export function isUpgrade(from: SubscriptionTier, to: SubscriptionTier): boolean {
+  return TIER_ORDER[to] > TIER_ORDER[from];
 }

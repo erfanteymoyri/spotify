@@ -11,8 +11,14 @@ import { Button } from "@/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatCompactNumber } from "@/lib/format";
 import { confirmToast, toast } from "@/lib/toast";
-import { artistService } from "@/services/artist.service";
+import {
+  artistService,
+  type ArtistWorkFiles,
+} from "@/services/artist.service";
 import type { ArtistWork, ArtistWorkInput } from "@/types";
+
+/** Shown when a work has no artwork of its own and no album to inherit from. */
+const FALLBACK_COVER = "/cover/cover5.jpg";
 
 export default function ArtistDashboardPage() {
   const { t } = useTranslation();
@@ -38,16 +44,15 @@ export default function ArtistDashboardPage() {
     setDialogOpen(true);
   };
 
-  const submit = async (input: ArtistWorkInput) => {
+  const submit = async (input: ArtistWorkInput, files: ArtistWorkFiles) => {
     if (editing) {
+      // Metadata only — the audio file of a published work is immutable.
       const updated = await artistService.updateWork(editing.id, input);
-      if (updated) {
-        setWorks((prev) =>
-          prev.map((work) => (work.id === updated.id ? updated : work)),
-        );
-      }
+      setWorks((prev) =>
+        prev.map((work) => (work.id === updated.id ? updated : work)),
+      );
     } else {
-      const created = await artistService.uploadWork(input);
+      const created = await artistService.uploadWork(input, files);
       setWorks((prev) => [created, ...prev]);
     }
     setDialogOpen(false);
@@ -132,7 +137,7 @@ function WorkRow({
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <div className="relative size-14 shrink-0 overflow-hidden rounded-md">
           <Image
-            src={work.coverUrl}
+            src={work.coverUrl ?? FALLBACK_COVER}
             alt={work.title}
             fill
             className="object-cover"

@@ -1,9 +1,8 @@
 /**
- * Environment variables — set in .env.local after backend is ready:
+ * Environment variables. Set in `.env.local`:
  *
- * NEXT_PUBLIC_API_URL=http://localhost:8000/api
+ *   NEXT_PUBLIC_API_URL=http://localhost:8000/api
  */
 export const env = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api",
-  isMockMode: process.env.NEXT_PUBLIC_MOCK_MODE !== "false",
 } as const;

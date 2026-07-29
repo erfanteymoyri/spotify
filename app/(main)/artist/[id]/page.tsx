@@ -9,45 +9,31 @@ import { FadeIn, Stagger, StaggerItem } from "@/components/shared/motion";
 import { SectionHeader } from "@/components/shared/section-header";
 import { Button } from "@/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
-import { musicService } from "@/services/music.service";
+import { musicService, type ArtistPage } from "@/services/music.service";
 import { useAuthStore } from "@/stores/auth-store";
 import { formatNumber } from "@/lib/format";
-import type { Album, Track } from "@/types";
-
-interface ArtistView {
-  stageName: string;
-  bio: string;
-  isVerified: boolean;
-  followersCount: number;
-  isFollowing: boolean;
-  totalListeners?: number;
-  totalStreams?: number;
-  albums: Album[];
-  singles: Track[];
-}
 
 export default function ArtistPage() {
   const { id } = useParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
   const { t } = useTranslation();
-  const [artist, setArtist] = useState<ArtistView | null>(null);
+  const [artist, setArtist] = useState<ArtistPage | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
 
   const userId = user?.id;
 
   useEffect(() => {
     if (id) {
-      musicService.getArtist(id, userId).then(setArtist);
+      musicService.getArtist(id).then(setArtist);
     }
-  }, [id, userId]);
+  }, [id]);
 
   const handleToggleFollow = async () => {
     if (!userId || !artist || followLoading) return;
     setFollowLoading(true);
     try {
       const result = await musicService.setFollowingArtist(
-        userId,
         id,
         !artist.isFollowing,
       );
@@ -56,11 +42,14 @@ export default function ArtistPage() {
           ? {
               ...prev,
               isFollowing: result.isFollowing,
-              followersCount: result.followersCount,
+              profile: {
+                ...prev.profile,
+                followersCount: result.target.followersCount,
+              },
             }
           : prev,
       );
-      if (result.currentUser) updateUser(result.currentUser);
+      updateUser(result.currentUser);
     } finally {
       setFollowLoading(false);
     }
@@ -74,8 +63,11 @@ export default function ArtistPage() {
     );
   }
 
-  // Overall listener/stream stats are a gold-tier perk (spec 2.4)
-  const showStats = user?.subscription === "gold";
+  const { profile } = artist;
+  // The API returns these as null unless the viewer is entitled to them
+  // (gold tier, the artist themselves, or staff) — spec 2.4.
+  const showStats =
+    profile.totalListeners != null || profile.totalStreams != null;
 
   return (
     <FadeIn className="space-y-8 py-4">
@@ -83,8 +75,8 @@ export default function ArtistPage() {
         <div className="pointer-events-none absolute -top-20 -left-20 size-56 rounded-full bg-primary/10 blur-3xl animate-[float_10s_ease-in-out_infinite]" />
         <div className="relative">
           <div className="flex items-center gap-2">
-            <h1 className="text-4xl font-bold">{artist.stageName}</h1>
-            {artist.isVerified && (
+            <h1 className="text-4xl font-bold">{profile.stageName}</h1>
+            {profile.isVerified && (
               <BadgeCheck
                 className="size-7 text-primary"
                 aria-label={t("artist.verified")}
@@ -92,10 +84,10 @@ export default function ArtistPage() {
             )}
           </div>
           <p className="mt-4 max-w-2xl leading-7 text-muted-foreground">
-            {artist.bio}
+            {profile.bio}
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            {formatNumber(artist.followersCount)} {t("profile.followers")}
+            {formatNumber(profile.followersCount)} {t("profile.followers")}
           </p>
           <Button
             variant={artist.isFollowing ? "outline" : "default"}
@@ -115,8 +107,8 @@ export default function ArtistPage() {
 
       {showStats && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Stat label={t("artist.listeners")} value={artist.totalListeners} />
-          <Stat label={t("artist.streams")} value={artist.totalStreams} />
+          <Stat label={t("artist.listeners")} value={profile.totalListeners} />
+          <Stat label={t("artist.streams")} value={profile.totalStreams} />
         </div>
       )}
 
@@ -147,8 +139,8 @@ export default function ArtistPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value?: number }) {
-  if (value === undefined) return null;
+function Stat({ label, value }: { label: string; value?: number | null }) {
+  if (value == null) return null;
   return (
     <div className="rounded-xl bg-card/40 p-4 text-center">
       <p className="text-2xl font-bold">{formatNumber(value)}</p>

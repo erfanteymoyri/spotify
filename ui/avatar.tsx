@@ -29,8 +29,9 @@ export function Avatar({ src, alt, size = "md", className }: AvatarProps) {
           src={src}
           alt={alt}
           fill
-          // Data URLs (mock avatar uploads) bypass the Next.js image optimizer
-          unoptimized={src.startsWith("data:")}
+          // Blob URLs are the local preview of a file the user just picked;
+          // the optimizer cannot fetch them, and there is nothing to optimize.
+          unoptimized={src.startsWith("blob:") || src.startsWith("data:")}
           className="object-cover"
         />
       ) : (

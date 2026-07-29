@@ -7,7 +7,7 @@ import { Dialog } from "@/ui/dialog";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Select } from "@/ui/select";
-import { subscriptionLimits } from "@/config/subscription";
+import { usePlan } from "@/providers/plans-provider";
 import { useTranslation } from "@/hooks/use-translation";
 import { parseApiError } from "@/lib/parse-api-error";
 import { updateProfileSchema } from "@/schemas/profile";
@@ -15,8 +15,8 @@ import { userService } from "@/services/user.service";
 import { useAuthStore } from "@/stores/auth-store";
 import type { Gender, User } from "@/types";
 
-/** Keeps mock avatars (data URLs) safely inside the Local Storage quota */
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+/** Matches MAX_IMAGE_UPLOAD_MB on the server, so oversize files fail fast. */
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -54,14 +54,19 @@ function EditProfileForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Local preview of the chosen file; the upload itself happens on submit.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user.avatarUrl);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarCleared, setAvatarCleared] = useState(false);
   const [form, setForm] = useState({
     displayName: user.displayName,
     birthDate: user.birthDate ?? "",
     gender: (user.gender ?? "") as Gender | "",
   });
 
-  const canUploadAvatar = subscriptionLimits[user.subscription].canUploadAvatar;
+  // Avatar uploads are a paid-tier feature (table 1); the plan comes from the API.
+  const plan = usePlan(user.subscription);
+  const canUploadAvatar = plan?.canUploadAvatar ?? false;
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,9 +83,15 @@ function EditProfileForm({
     }
 
     setError(null);
-    const reader = new FileReader();
-    reader.onload = () => setAvatarUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    setAvatarFile(file);
+    setAvatarCleared(false);
+    setAvatarUrl(URL.createObjectURL(file));
+  };
+
+  const clearAvatar = () => {
+    setAvatarFile(null);
+    setAvatarUrl(null);
+    setAvatarCleared(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,11 +110,15 @@ function EditProfileForm({
 
     setLoading(true);
     try {
-      const updated = await userService.updateProfile(user.id, {
-        ...parsed.data,
-        // Avatar changes are restricted to silver/gold tiers (spec 2.3)
-        ...(canUploadAvatar ? { avatarUrl } : {}),
-      });
+      // Text fields go as JSON; the image needs its own multipart request.
+      let updated = await userService.updateProfile(parsed.data);
+      if (canUploadAvatar) {
+        if (avatarFile) {
+          updated = await userService.uploadAvatar(avatarFile);
+        } else if (avatarCleared) {
+          updated = await userService.removeAvatar();
+        }
+      }
       updateUser(updated);
       onClose();
     } catch (err) {
@@ -144,7 +159,7 @@ function EditProfileForm({
                 type="button"
                 variant="destructive"
                 size="sm"
-                onClick={() => setAvatarUrl(null)}
+                onClick={clearAvatar}
               >
                 {t("profile.removeAvatar")}
               </Button>

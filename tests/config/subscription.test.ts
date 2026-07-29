@@ -1,43 +1,70 @@
 import { describe, expect, it } from "vitest";
-import { canCreatePlaylist, subscriptionLimits } from "@/config/subscription";
+import { canCreatePlaylist, formatLimit, isUpgrade } from "@/config/subscription";
+import type { SubscriptionPlan } from "@/types";
 
-describe("subscriptionLimits (spec table 1)", () => {
-  it("caps free playlists at 6 and daily streams at 60", () => {
-    expect(subscriptionLimits.free.maxPlaylists).toBe(6);
-    expect(subscriptionLimits.free.maxDailyStreams).toBe(60);
+/**
+ * The tier limits themselves now live in the database and arrive via
+ * `GET /subscriptions/plans`, so these tests cover how the UI *interprets* a
+ * plan rather than re-asserting table 1 — the backend owns that, and its own
+ * suite checks it.
+ */
+function plan(overrides: Partial<SubscriptionPlan> = {}): SubscriptionPlan {
+  return {
+    tier: "free",
+    name: "Free",
+    price: 0,
+    currency: "IRR",
+    maxDailyStreams: 60,
+    maxPlaylists: 6,
+    canUploadAvatar: false,
+    canDownload: false,
+    hasEarlyAccess: false,
+    canViewStats: false,
+    ...overrides,
+  };
+}
+
+describe("canCreatePlaylist", () => {
+  it("allows creation below the plan's quota", () => {
+    expect(canCreatePlaylist(plan({ maxPlaylists: 6 }), 5)).toBe(true);
   });
 
-  it("gives silver unlimited streams but capped playlists", () => {
-    expect(subscriptionLimits.silver.maxDailyStreams).toBeNull();
-    expect(subscriptionLimits.silver.maxPlaylists).toBe(100);
+  it("blocks creation at and above the quota", () => {
+    expect(canCreatePlaylist(plan({ maxPlaylists: 6 }), 6)).toBe(false);
+    expect(canCreatePlaylist(plan({ maxPlaylists: 6 }), 7)).toBe(false);
   });
 
-  it("unlocks every perk for gold", () => {
-    expect(subscriptionLimits.gold.maxPlaylists).toBeNull();
-    expect(subscriptionLimits.gold.hasEarlyAccess).toBe(true);
-    expect(subscriptionLimits.gold.canViewStats).toBe(true);
+  it("treats a null quota as unlimited", () => {
+    expect(canCreatePlaylist(plan({ maxPlaylists: null }), 10_000)).toBe(true);
   });
 
-  it("gates avatar upload behind a paid tier", () => {
-    expect(subscriptionLimits.free.canUploadAvatar).toBe(false);
-    expect(subscriptionLimits.silver.canUploadAvatar).toBe(true);
-    expect(subscriptionLimits.gold.canUploadAvatar).toBe(true);
+  it("stays permissive while the plan is still loading", () => {
+    // The server is the real gate; blocking here would break the UI on a slow
+    // or failed plans request.
+    expect(canCreatePlaylist(null, 999)).toBe(true);
   });
 });
 
-describe("canCreatePlaylist", () => {
-  it("blocks a free user at the limit", () => {
-    expect(canCreatePlaylist("free", 5)).toBe(true);
-    expect(canCreatePlaylist("free", 6)).toBe(false);
-    expect(canCreatePlaylist("free", 7)).toBe(false);
+describe("formatLimit", () => {
+  it("renders a number as-is", () => {
+    expect(formatLimit(100, "∞")).toBe("100");
   });
 
-  it("blocks a silver user only at 100", () => {
-    expect(canCreatePlaylist("silver", 99)).toBe(true);
-    expect(canCreatePlaylist("silver", 100)).toBe(false);
+  it("renders null as the unlimited label", () => {
+    expect(formatLimit(null, "∞")).toBe("∞");
+  });
+});
+
+describe("isUpgrade", () => {
+  it("recognises a move up the ladder", () => {
+    expect(isUpgrade("free", "silver")).toBe(true);
+    expect(isUpgrade("silver", "gold")).toBe(true);
+    expect(isUpgrade("free", "gold")).toBe(true);
   });
 
-  it("never blocks a gold user", () => {
-    expect(canCreatePlaylist("gold", 10_000)).toBe(true);
+  it("rejects sideways and downward moves", () => {
+    expect(isUpgrade("gold", "gold")).toBe(false);
+    expect(isUpgrade("gold", "silver")).toBe(false);
+    expect(isUpgrade("silver", "free")).toBe(false);
   });
 });

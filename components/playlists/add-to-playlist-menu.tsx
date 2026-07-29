@@ -5,11 +5,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { Check, ListPlus, Plus } from "lucide-react";
 import { canCreatePlaylist } from "@/config/subscription";
 import { useTranslation } from "@/hooks/use-translation";
+import { usePlan } from "@/providers/plans-provider";
 import { playlistService } from "@/services/music.service";
 import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import type { Playlist } from "@/types";
+import { parseApiError } from "@/lib/parse-api-error";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 interface AddToPlaylistMenuProps {
@@ -30,14 +33,14 @@ export function AddToPlaylistMenu({ trackId }: AddToPlaylistMenuProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const userId = user?.id;
-  const tier = user?.subscription ?? "free";
+  const plan = usePlan(user?.subscription);
   const canCreate =
-    playlists !== null && canCreatePlaylist(tier, playlists.length);
+    playlists !== null && canCreatePlaylist(plan, playlists.length);
 
   // Lazy-load playlists the first time the menu opens
   useEffect(() => {
     if (open && userId && playlists === null) {
-      playlistService.getPlaylists(userId).then(setPlaylists);
+      playlistService.getPlaylists().then(setPlaylists);
     }
   }, [open, userId, playlists]);
 
@@ -64,16 +67,8 @@ export function AddToPlaylistMenu({ trackId }: AddToPlaylistMenuProps) {
     try {
       const inPlaylist = playlist.trackIds.includes(trackId);
       const updated = inPlaylist
-        ? await playlistService.removeTrackFromPlaylist(
-            userId,
-            playlist.id,
-            trackId,
-          )
-        : await playlistService.addTrackToPlaylist(
-            userId,
-            playlist.id,
-            trackId,
-          );
+        ? await playlistService.removeTrackFromPlaylist(playlist.id, trackId)
+        : await playlistService.addTrackToPlaylist(playlist.id, trackId);
       setPlaylists((prev) =>
         prev ? prev.map((p) => (p.id === updated.id ? updated : p)) : prev,
       );
@@ -86,18 +81,16 @@ export function AddToPlaylistMenu({ trackId }: AddToPlaylistMenuProps) {
     if (!userId || !newName.trim() || busyId) return;
     setBusyId("create");
     try {
-      const created = await playlistService.createPlaylist(
-        userId,
-        newName.trim(),
-      );
+      const created = await playlistService.createPlaylist(newName.trim());
       // New playlist immediately receives the track — one less click
       const updated = await playlistService.addTrackToPlaylist(
-        userId,
         created.id,
         trackId,
       );
       setPlaylists((prev) => (prev ? [...prev, updated] : [updated]));
       setNewName("");
+    } catch (err) {
+      toast.error(parseApiError(err, t("playlists.limitReached")));
     } finally {
       setBusyId(null);
     }

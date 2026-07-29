@@ -9,6 +9,7 @@ import { Input } from "@/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatNumber } from "@/lib/format";
+import { usePlans } from "@/providers/plans-provider";
 import { adminService } from "@/services/admin.service";
 import type { AdminStats, SubscriptionPricing, SubscriptionTier } from "@/types";
 
@@ -21,6 +22,7 @@ const TIER_COLORS: Record<SubscriptionTier, string> = {
 export default function AdminPricingPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { refresh: refreshPlans } = usePlans();
   const isAdmin = user?.role === "admin";
 
   const [pricing, setPricing] = useState<SubscriptionPricing | null>(null);
@@ -44,13 +46,20 @@ export default function AdminPricingPage() {
 
   const save = async () => {
     setSaving(true);
-    const updated = await adminService.updatePricing({
-      silver: Number(silver) || 0,
-      gold: Number(gold) || 0,
-    });
-    setPricing(updated);
-    setSaving(false);
-    setSaved(true);
+    try {
+      const updated = await adminService.updatePricing({
+        silver: Number(silver) || 0,
+        gold: Number(gold) || 0,
+      });
+      setPricing(updated);
+      // Every screen reads prices from the shared plans cache, so refresh it —
+      // this is what makes the change take effect "instantly across the whole
+      // system" (spec 2.11.3).
+      refreshPlans();
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isAdmin) {

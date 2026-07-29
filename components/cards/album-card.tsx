@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Play } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { routes } from "@/config/site";
-import { getAlbumTracks } from "@/lib/mock-data";
+import { musicService } from "@/services/music.service";
 import { usePlayerStore } from "@/stores/player-store";
 import type { Album } from "@/types";
 import { cn } from "@/lib/utils";
+
+const FALLBACK_COVER = "/cover/cover5.jpg";
 
 interface AlbumCardProps {
   album: Album;
@@ -18,6 +21,20 @@ interface AlbumCardProps {
 export function AlbumCard({ album, className }: AlbumCardProps) {
   const { t } = useTranslation();
   const playTrack = usePlayerStore((s) => s.playTrack);
+  const [loadingTracks, setLoadingTracks] = useState(false);
+
+  // The card payload carries only track ids; the full tracks (with their audio
+  // URLs) are fetched on demand so a grid of albums stays one request.
+  const handlePlay = async () => {
+    if (loadingTracks) return;
+    setLoadingTracks(true);
+    try {
+      const { tracks } = await musicService.getAlbum(album.id);
+      if (tracks.length > 0) playTrack(tracks[0], tracks);
+    } finally {
+      setLoadingTracks(false);
+    }
+  };
 
   return (
     <div
@@ -28,7 +45,7 @@ export function AlbumCard({ album, className }: AlbumCardProps) {
     >
       <div className="relative mb-4 aspect-square overflow-hidden rounded-lg shadow-lg">
         <Image
-          src={album.coverUrl}
+          src={album.coverUrl ?? FALLBACK_COVER}
           alt={album.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -42,13 +59,9 @@ export function AlbumCard({ album, className }: AlbumCardProps) {
         />
         <button
           type="button"
-          onClick={() => {
-            const tracks = getAlbumTracks(album.id);
-            if (tracks.length > 0) {
-              playTrack(tracks[0], tracks);
-            }
-          }}
-          className="absolute bottom-2 left-2 z-10 flex size-12 translate-y-2 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-xl shadow-primary/30 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-105"
+          onClick={handlePlay}
+          disabled={loadingTracks}
+          className="absolute bottom-2 left-2 z-10 flex size-12 translate-y-2 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-xl shadow-primary/30 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-105 disabled:opacity-60"
           aria-label={t("player.playAlbum")}
         >
           <Play className="size-5 fill-current" />

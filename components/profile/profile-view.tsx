@@ -4,7 +4,7 @@ import { Avatar } from "@/ui/avatar";
 import { Button } from "@/ui/button";
 import { FadeIn } from "@/components/shared/motion";
 import { SectionHeader } from "@/components/shared/section-header";
-import { subscriptionLimits } from "@/config/subscription";
+import { usePlan } from "@/providers/plans-provider";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatDate, formatNumber } from "@/lib/format";
 import type { SubscriptionTier, User } from "@/types";
@@ -34,7 +34,8 @@ export function ProfileView({
   onToggleFollow,
 }: ProfileViewProps) {
   const { t, locale } = useTranslation();
-  const limits = subscriptionLimits[user.subscription];
+  // Quotas come from the API-served plan, not a hard-coded copy of table 1.
+  const plan = usePlan(user.subscription);
   const dateLocale = locale === "fa" ? "fa-IR" : "en-US";
 
   return (
@@ -94,14 +95,17 @@ export function ProfileView({
         />
         <StatCard
           label={t("profile.maxDailyStreams")}
-          value={limits.maxDailyStreams ?? "∞"}
+          value={plan?.maxDailyStreams ?? "∞"}
         />
       </div>
 
       <section>
         <SectionHeader title={t("profile.accountInfo")} />
         <dl className="grid gap-x-10 gap-y-6 rounded-xl bg-card/40 p-6 sm:grid-cols-2 sm:p-7">
-          <InfoRow label={t("common.email")} value={user.email} />
+          {/* Absent on someone else's profile — the API only sends your own. */}
+          {user.email && (
+            <InfoRow label={t("common.email")} value={user.email} />
+          )}
           <InfoRow label={t("profile.username")} value={user.username} />
           {user.birthDate && (
             <InfoRow
@@ -118,7 +122,7 @@ export function ProfileView({
         </dl>
       </section>
 
-      {isOwn && !limits.canUploadAvatar && (
+      {isOwn && plan !== null && !plan.canUploadAvatar && (
         <p className="text-sm text-muted-foreground">
           {t("profile.avatarUpgradeHint")}
         </p>

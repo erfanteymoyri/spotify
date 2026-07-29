@@ -21,8 +21,9 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!role) return;
+    // The inbox is already scoped to this user and their role server-side.
     notificationService
-      .getNotifications(role)
+      .getNotifications()
       .then(setNotifications)
       .finally(() => setLoading(false));
   }, [role]);
@@ -35,8 +36,7 @@ export default function NotificationsPage() {
   };
 
   const markAllRead = async () => {
-    if (!role) return;
-    await notificationService.markAllAsRead(role);
+    await notificationService.markAllAsRead();
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 

@@ -1,50 +1,41 @@
-import { mockSettings } from "@/lib/mock-data";
-import { notificationStorage } from "@/lib/notification-storage";
-import { readJson, writeJson } from "@/lib/local-store";
-import { delay } from "@/lib/service-utils";
-import type { Notification, UserRole, UserSettings } from "@/types";
+import { apiClient } from "@/api/client";
+import { endpoints } from "@/api/endpoints";
+import type { Notification } from "@/types";
 
+/**
+ * The inbox is already scoped to the signed-in user *and* their role: the
+ * backend addressed each notification to specific recipients when it was
+ * created, so there is nothing to filter client-side.
+ */
 export const notificationService = {
-  /** GET /notifications — the backend filters by the authenticated user's role */
-  async getNotifications(role: UserRole): Promise<Notification[]> {
-    await delay(200);
-    return notificationStorage.getForRole(role);
+  getNotifications(unreadOnly = false): Promise<Notification[]> {
+    return apiClient<Notification[]>(endpoints.notifications.list, {
+      method: "GET",
+      query: unreadOnly ? { unread: true } : undefined,
+    });
   },
 
-  /** PATCH /notifications/:id/read */
   async markAsRead(id: string): Promise<void> {
-    await delay(100);
-    notificationStorage.markRead(id);
+    await apiClient<Notification>(endpoints.notifications.markRead(id), {
+      method: "PATCH",
+    });
   },
 
-  /** PATCH /notifications/read-all */
-  async markAllAsRead(role: UserRole): Promise<void> {
-    await delay(100);
-    notificationStorage.markAllRead(role);
+  async markAllAsRead(): Promise<void> {
+    await apiClient<{ unread: number }>(endpoints.notifications.readAll, {
+      method: "PATCH",
+    });
   },
 
-  /** DELETE /notifications/:id */
   async deleteNotification(id: string): Promise<void> {
-    await delay(100);
-    notificationStorage.remove(id);
-  },
-};
-
-const SETTINGS_KEY = "spotify-settings";
-
-export const settingsService = {
-  /** GET /settings */
-  async getSettings(): Promise<UserSettings> {
-    await delay(200);
-    return readJson<UserSettings>(SETTINGS_KEY, mockSettings);
+    await apiClient<void>(endpoints.notifications.delete(id), {
+      method: "DELETE",
+    });
   },
 
-  /** PATCH /settings */
-  async updateSettings(data: Partial<UserSettings>): Promise<UserSettings> {
-    await delay(200);
-    const current = readJson<UserSettings>(SETTINGS_KEY, mockSettings);
-    const updated = { ...current, ...data };
-    writeJson(SETTINGS_KEY, updated);
-    return updated;
+  getUnreadCount(): Promise<number> {
+    return apiClient<{ unread: number }>(endpoints.notifications.unreadCount, {
+      method: "GET",
+    }).then((response) => response.unread);
   },
 };

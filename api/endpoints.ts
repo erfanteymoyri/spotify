@@ -1,161 +1,168 @@
 /**
  * =============================================================================
- * Backend API endpoint reference — project phase 2
+ * Backend API endpoint map
  * =============================================================================
- * All paths are relative to NEXT_PUBLIC_API_URL (default: http://localhost:8000/api).
- * Each section documents HTTP method, body/params, and expected response.
+ * All paths are relative to NEXT_PUBLIC_API_URL (default http://localhost:8000/api)
+ * and mirror the Django routes one-for-one. The live, authoritative contract is
+ * the OpenAPI document the backend serves at /api/docs.
  * =============================================================================
  */
 
 export const endpoints = {
   // --- Authentication ---
   auth: {
-    /** POST /auth/login — shared login for all roles */
+    /** POST — shared sign-in for all four roles */
     login: "/auth/login",
-    /** POST /auth/register — listener registration */
+    /** POST — listener registration; returns { user, token } */
     register: "/auth/register",
-    /** POST /auth/register/artist — artist registration (status: pending) */
+    /** POST — artist application; lands in `pending` */
     registerArtist: "/auth/register/artist",
-    /** POST /auth/forgot-password — send recovery email */
+    /** POST — request a password-reset email */
     forgotPassword: "/auth/forgot-password",
-    /** POST /auth/reset-password — set new password with token */
+    /** POST — { uid, token, password } */
     resetPassword: "/auth/reset-password",
-    /** POST /auth/logout — logout and invalidate token */
+    /** POST — blacklists the refresh token */
     logout: "/auth/logout",
-    /** GET /auth/me — current user from token */
+    /** GET — the current user, resolved from the bearer token */
     me: "/auth/me",
   },
 
   // --- Users ---
   users: {
-    /** GET /users/:id — public user profile */
+    /** GET — public profile (no email) */
     byId: (id: string) => `/users/${id}`,
-    /** PATCH /users/me — edit profile (displayName, birthDate, gender) */
-    updateMe: "/users/me",
-    /** POST /users/me/avatar — upload avatar (multipart) — restricted for free tier */
-    uploadAvatar: "/users/me/avatar",
-    /** POST /users/:id/follow — follow user */
+    /** GET | PATCH | DELETE — my own account */
+    me: "/users/me",
+    /** POST (multipart) | DELETE — my avatar; paid tiers only */
+    avatar: "/users/me/avatar",
+    /** POST to follow, DELETE to unfollow */
     follow: (id: string) => `/users/${id}/follow`,
-    /** DELETE /users/:id/follow — unfollow user */
-    unfollow: (id: string) => `/users/${id}/follow`,
-    /** DELETE /users/me — delete account */
-    deleteMe: "/users/me",
   },
 
   // --- Home feed ---
   home: {
-    /** GET /home — recent playlists, latest albums, popular tracks */
+    /** GET — recently played playlists, latest albums, popular + early-access tracks */
     feed: "/home",
   },
 
-  // --- Music ---
+  // --- Catalogue ---
   tracks: {
-    /** GET /tracks — list with pagination, search, sort (listeners|date) */
+    /** GET — ?q=&type=track|artist&sort=listeners|date&page=&pageSize= */
     list: "/tracks",
-    /** GET /tracks/:id — track details */
     byId: (id: string) => `/tracks/${id}`,
-    /** GET /tracks/search?q=&type=track|artist&sort=listeners|date */
-    search: "/tracks/search",
-    /** POST /tracks/:id/stream — record stream (daily limit + analytics) */
+    /** POST — { secondsPlayed }; enforces the daily quota */
     stream: (id: string) => `/tracks/${id}/stream`,
   },
 
   albums: {
-    /** GET /albums — album list */
     list: "/albums",
-    /** GET /albums/:id — details + trackIds */
+    /** GET — album with its full track list */
     byId: (id: string) => `/albums/${id}`,
   },
 
   artists: {
-    /** GET /artists/:id — artist profile + albums + singles */
+    /** GET — profile + albums + singles + isFollowing */
     byId: (id: string) => `/artists/${id}`,
-    /** GET /artists/:id/stats — stats (gold tier + verified artist only) */
+    /** GET — aggregate stats; gold tier only */
     stats: (id: string) => `/artists/${id}/stats`,
+    /** POST to follow, DELETE to unfollow */
+    follow: (id: string) => `/artists/${id}/follow`,
+  },
+
+  me: {
+    /** GET — deduplicated recent plays, newest first */
+    recentlyPlayed: "/me/recently-played",
   },
 
   // --- Playlists ---
   playlists: {
-    /** GET /playlists — current user's playlists */
-    list: "/playlists",
-    /** POST /playlists — create { name } — enforce tier playlist limit */
-    create: "/playlists",
-    /** PATCH /playlists/:id — rename playlist */
-    update: (id: string) => `/playlists/${id}`,
-    /** DELETE /playlists/:id */
-    delete: (id: string) => `/playlists/${id}`,
-    /** GET /playlists/:id — details + tracks */
+    /** GET my playlists | POST { name } (tier quota enforced) */
+    root: "/playlists",
+    /** GET details | PATCH { name } | DELETE */
     byId: (id: string) => `/playlists/${id}`,
-    /** POST /playlists/:id/tracks — { trackId } */
-    addTrack: (id: string) => `/playlists/${id}/tracks`,
-    /** DELETE /playlists/:id/tracks/:trackId */
-    removeTrack: (playlistId: string, trackId: string) =>
+    /** POST { trackId } */
+    tracks: (id: string) => `/playlists/${id}/tracks`,
+    /** DELETE */
+    track: (playlistId: string, trackId: string) =>
       `/playlists/${playlistId}/tracks/${trackId}`,
   },
 
   // --- Notifications ---
   notifications: {
-    /** GET /notifications — list filtered by user role */
+    /** GET — ?unread=true */
     list: "/notifications",
-    /** PATCH /notifications/:id/read */
     markRead: (id: string) => `/notifications/${id}/read`,
-    /** DELETE /notifications/:id */
     delete: (id: string) => `/notifications/${id}`,
-    /** PATCH /notifications/read-all */
     readAll: "/notifications/read-all",
+    unreadCount: "/notifications/unread-count",
   },
 
-  // --- Settings ---
+  // --- Settings (server-side, synced across devices) ---
   settings: {
-    /** GET /settings — notificationsEnabled, volume, language */
-    get: "/settings",
-    /** PATCH /settings */
-    update: "/settings",
+    /** GET | PATCH — { notificationsEnabled, volume, language } */
+    root: "/settings",
   },
 
-  // --- Subscriptions ---
+  // --- Subscriptions & payment ---
   subscriptions: {
-    /** GET /subscriptions/plans — dynamic silver/gold pricing */
+    /** GET — prices and limits for every tier */
     plans: "/subscriptions/plans",
-    /** GET /subscriptions/me — active user subscription */
+    /** GET — my tier, plan and active subscription */
     me: "/subscriptions/me",
+    history: "/subscriptions/history",
+    /** POST { tier, durationMonths } — returns { payment, paymentUrl } */
+    checkout: "/subscriptions/checkout",
   },
 
-  // --- Artist panel ---
+  payments: {
+    list: "/payments",
+    /** GET — poll after returning from the gateway */
+    byId: (id: string) => `/payments/${id}`,
+  },
+
+  // --- Support tickets ---
+  tickets: {
+    /** GET my tickets | POST { subject, message } */
+    root: "/tickets",
+    byId: (id: string) => `/tickets/${id}`,
+    /** POST { content } */
+    messages: (id: string) => `/tickets/${id}/messages`,
+  },
+
+  // --- Artist studio ---
   artist: {
-    /** GET /artist/works — published works */
+    /** GET — my published works, with per-work revenue */
     works: "/artist/works",
-    /** POST /artist/tracks — upload (multipart: audio, cover, metadata) */
-    uploadTrack: "/artist/tracks",
-    /** PATCH /artist/tracks/:id */
-    updateTrack: (id: string) => `/artist/tracks/${id}`,
-    /** DELETE /artist/tracks/:id */
-    deleteTrack: (id: string) => `/artist/tracks/${id}`,
-    /** GET /artist/analytics — detailed analytics */
+    /** POST (multipart: audio, cover, metadata) */
+    tracks: "/artist/tracks",
+    /** PATCH | DELETE */
+    trackById: (id: string) => `/artist/tracks/${id}`,
+    /** GET — lifetime studio totals */
     analytics: "/artist/analytics",
+    /** GET — my monthly payout statements */
+    payouts: "/artist/payouts",
   },
 
-  // --- Admin / support ---
+  // --- Back office (support / admin) ---
   admin: {
-    /** GET /admin/artist-requests?status=pending */
+    /** GET — ?status=pending|approved|rejected|all */
     artistRequests: "/admin/artist-requests",
-    /** PATCH /admin/artist-requests/:id — { action: approve|reject, reason? } */
+    /** PATCH — { action: approve|reject, reason? } */
     reviewArtist: (id: string) => `/admin/artist-requests/${id}`,
-    /** GET /admin/tickets */
+    /** GET — every ticket */
     tickets: "/admin/tickets",
-    /** GET /admin/tickets/:id — includes messages */
     ticketById: (id: string) => `/admin/tickets/${id}`,
-    /** POST /admin/tickets/:id/messages — { content } */
+    /** POST { content } — reply as support */
     ticketReply: (id: string) => `/admin/tickets/${id}/messages`,
-    /** GET /admin/accounting — monthly artist payout table */
+    /** PATCH { status } */
+    ticketStatus: (id: string) => `/admin/tickets/${id}`,
+    /** GET — ?month=YYYY-MM; monthly artist payout table */
     accounting: "/admin/accounting",
-    /** PATCH /admin/accounting/:id/settle — confirm settlement */
+    /** PATCH — confirm a settlement (admin only) */
     settlePayment: (id: string) => `/admin/accounting/${id}/settle`,
-    /** GET /admin/pricing — { silver: number, gold: number } */
+    /** GET | PATCH — { silver, gold } */
     pricing: "/admin/pricing",
-    /** PATCH /admin/pricing — { silver, gold } */
-    updatePricing: "/admin/pricing",
-    /** GET /admin/stats — tier pie chart + monthly revenue */
+    /** GET — tier distribution + monthly revenue (admin only) */
     stats: "/admin/stats",
   },
 } as const;

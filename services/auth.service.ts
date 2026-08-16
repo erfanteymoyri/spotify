@@ -49,6 +49,13 @@ export const authService = {
     });
   },
 
+  /**
+   * Step 1 of password recovery: email a short code to the address.
+   *
+   * Resolves the same way whether or not the address has an account — the
+   * server will not say which, so the UI must not promise that an email is
+   * definitely on its way to *this* address.
+   */
   forgotPassword(email: string): Promise<{ message: string }> {
     return apiClient(endpoints.auth.forgotPassword, {
       method: "POST",
@@ -57,9 +64,23 @@ export const authService = {
     });
   },
 
+  /**
+   * Step 2: trade the emailed code for a single-use ticket. The code is spent
+   * here — a wrong one costs an attempt, and after a few the user has to ask
+   * for a new code.
+   */
+  verifyResetCode(email: string, code: string): Promise<{ ticket: string }> {
+    return apiClient(endpoints.auth.verifyResetCode, {
+      method: "POST",
+      anonymous: true,
+      body: { email, code },
+    });
+  },
+
+  /** Step 3: spend the ticket on a new password. */
   resetPassword(data: {
-    uid: string;
-    token: string;
+    email: string;
+    ticket: string;
     password: string;
   }): Promise<{ message: string }> {
     return apiClient(endpoints.auth.resetPassword, {

@@ -17,9 +17,11 @@ export const endpoints = {
     register: "/auth/register",
     /** POST — artist application; lands in `pending` */
     registerArtist: "/auth/register/artist",
-    /** POST — request a password-reset email */
+    /** POST — { email }; emails a short recovery code. Always 200. */
     forgotPassword: "/auth/forgot-password",
-    /** POST — { uid, token, password } */
+    /** POST — { email, code } → { ticket }; spends the code */
+    verifyResetCode: "/auth/verify-reset-code",
+    /** POST — { email, ticket, password }; the ticket comes from the step above */
     resetPassword: "/auth/reset-password",
     /** POST — blacklists the refresh token */
     logout: "/auth/logout",

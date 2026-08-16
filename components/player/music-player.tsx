@@ -24,9 +24,10 @@ import {
 import { CrossfadeToggle } from "@/components/player/crossfade-toggle";
 import { QualityMenu } from "@/components/player/quality-menu";
 import { QueuePanel } from "@/components/player/queue-panel";
+import { SeekBar } from "@/components/player/seek-bar";
 import { useTranslation } from "@/hooks/use-translation";
 import { routes } from "@/config/site";
-import { formatDuration, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
 import { Slider } from "@/ui/slider";
@@ -37,27 +38,36 @@ export function MusicPlayer() {
   const { t } = useTranslation();
   const isGold = useAuthStore((s) => s.user?.subscription === "gold");
   const [queueOpen, setQueueOpen] = useState(false);
-  const {
-    currentTrack,
-    isPlaying,
-    progress,
-    duration,
-    volume,
-    isMuted,
-    repeatMode,
-    isShuffle,
-    isExpanded,
-    togglePlay,
-    next,
-    previous,
-    setVolume,
-    toggleMute,
-    setRepeatMode,
-    toggleShuffle,
-    toggleExpanded,
-    closePlayer,
-    seekTo,
-  } = usePlayerStore();
+
+  /*
+   * One selector per field, and deliberately no `progress`.
+   *
+   * Subscribing to the store as a whole (`usePlayerStore()`) re-renders this
+   * component on *any* state change — including the playback position, which
+   * moves about four times a second. That dragged the artwork, both
+   * `AnimatePresence` trees and the queue panel through a render on every tick.
+   * Position now lives in `SeekBar` alone; everything selected here changes
+   * only when the listener does something.
+   */
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const volume = usePlayerStore((s) => s.volume);
+  const isMuted = usePlayerStore((s) => s.isMuted);
+  const repeatMode = usePlayerStore((s) => s.repeatMode);
+  const isShuffle = usePlayerStore((s) => s.isShuffle);
+  const isExpanded = usePlayerStore((s) => s.isExpanded);
+
+  // Zustand actions are created once and never replaced, so selecting them
+  // individually costs nothing and never triggers a render of its own.
+  const togglePlay = usePlayerStore((s) => s.togglePlay);
+  const next = usePlayerStore((s) => s.next);
+  const previous = usePlayerStore((s) => s.previous);
+  const setVolume = usePlayerStore((s) => s.setVolume);
+  const toggleMute = usePlayerStore((s) => s.toggleMute);
+  const setRepeatMode = usePlayerStore((s) => s.setRepeatMode);
+  const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
+  const toggleExpanded = usePlayerStore((s) => s.toggleExpanded);
+  const closePlayer = usePlayerStore((s) => s.closePlayer);
 
   const cycleRepeat = () => {
     const modes = ["off", "all", "one"] as const;
@@ -70,8 +80,6 @@ export function MusicPlayer() {
 
   const controlProps = {
     isPlaying,
-    progress,
-    duration,
     volume,
     isMuted,
     repeatMode,
@@ -79,7 +87,6 @@ export function MusicPlayer() {
     onTogglePlay: togglePlay,
     onPrevious: previous,
     onNext: handleNext,
-    onSeek: seekTo,
     onVolumeChange: setVolume,
     onToggleMute: toggleMute,
     onCycleRepeat: cycleRepeat,
@@ -218,14 +225,7 @@ export function MusicPlayer() {
             <QueuePanel open={queueOpen} onClose={() => setQueueOpen(false)} />
 
             {/* Seek bar spans the full width — always LTR like standard players */}
-            <div dir="ltr" className="hidden px-4 pt-2 md:block">
-              <Slider
-                min={0}
-                max={duration || 100}
-                value={progress}
-                onChange={(e) => seekTo(Number(e.target.value))}
-              />
-            </div>
+            <SeekBar className="hidden px-4 pt-2 md:block" />
 
             <div className="flex items-center gap-4 px-4 py-2">
               <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -370,8 +370,6 @@ function StatChip({
 interface PlayerControlsProps {
   className?: string;
   isPlaying: boolean;
-  progress: number;
-  duration: number;
   volume: number;
   isMuted: boolean;
   repeatMode: string;
@@ -380,7 +378,6 @@ interface PlayerControlsProps {
   onTogglePlay: () => void;
   onPrevious: () => void;
   onNext: () => void;
-  onSeek: (time: number) => void;
   onVolumeChange: (v: number) => void;
   onToggleMute: () => void;
   onCycleRepeat: () => void;
@@ -390,8 +387,6 @@ interface PlayerControlsProps {
 function PlayerControls({
   className,
   isPlaying,
-  progress,
-  duration,
   volume,
   isMuted,
   repeatMode,
@@ -400,7 +395,6 @@ function PlayerControls({
   onTogglePlay,
   onPrevious,
   onNext,
-  onSeek,
   onVolumeChange,
   onToggleMute,
   onCycleRepeat,
@@ -449,19 +443,7 @@ function PlayerControls({
           )}
         </Button>
       </div>
-      {expanded && (
-        <div className="flex w-full items-center gap-3 text-xs tabular-nums text-muted-foreground">
-          <span>{formatDuration(progress)}</span>
-          <Slider
-            min={0}
-            max={duration || 100}
-            value={progress}
-            onChange={(e) => onSeek(Number(e.target.value))}
-            className="flex-1"
-          />
-          <span>{formatDuration(duration)}</span>
-        </div>
-      )}
+      {expanded && <SeekBar withTimes />}
       {expanded ? (
         <div className="mt-1 flex items-center gap-2">
           <Button variant="ghost" size="icon-sm" onClick={onToggleMute}>

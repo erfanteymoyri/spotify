@@ -15,8 +15,21 @@
  * caller then simply keeps the default theme.
  */
 
-import { getColorSync, getSwatchesSync } from "colorthief";
 import { hexToOklch, isUsableThemeColor } from "@/lib/color";
+
+/**
+ * Color Thief is loaded on first use, not with the app.
+ *
+ * `DynamicThemeProvider` sits in the root layout, so a static import would put
+ * the quantiser in the entry bundle of every route — parsed before first paint
+ * on a page that may never play anything. Nothing needs it until a cover is on
+ * screen, and by then the app is interactive.
+ */
+let colorThief: Promise<typeof import("colorthief")> | null = null;
+function loadColorThief() {
+  colorThief ??= import("colorthief");
+  return colorThief;
+}
 
 /**
  * Extraction costs a decode plus a quantisation pass, and a listener cycling
@@ -40,8 +53,13 @@ export async function extractCoverColor(src: string): Promise<string | null> {
 
 async function extract(src: string): Promise<string | null> {
   let image: HTMLImageElement;
+  let getColorSync: typeof import("colorthief").getColorSync;
+  let getSwatchesSync: typeof import("colorthief").getSwatchesSync;
   try {
-    image = await loadImage(src);
+    [image, { getColorSync, getSwatchesSync }] = await Promise.all([
+      loadImage(src),
+      loadColorThief(),
+    ]);
   } catch {
     return null;
   }

@@ -20,8 +20,15 @@ interface QueuePanelProps {
  */
 export function QueuePanel({ open, onClose }: QueuePanelProps) {
   const { t } = useTranslation();
-  const { queue, currentTrack, isPlaying, playTrack, removeFromQueue } =
-    usePlayerStore();
+  // Selectors, not the whole store: this panel stays mounted behind
+  // `AnimatePresence` even while closed, so a whole-store subscription had it
+  // re-rendering its track list four times a second throughout playback —
+  // for a panel nobody was looking at.
+  const queue = usePlayerStore((s) => s.queue);
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const playTrack = usePlayerStore((s) => s.playTrack);
+  const removeFromQueue = usePlayerStore((s) => s.removeFromQueue);
 
   return (
     <AnimatePresence>

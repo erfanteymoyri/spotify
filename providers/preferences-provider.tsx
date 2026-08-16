@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { settingsService } from "@/services/user.service";
@@ -104,8 +105,15 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
 
   const update = useCallback(
     async (patch: Partial<UserSettings>) => {
-      const previous = settings;
-      setSettings((current) => ({ ...current, ...patch }));
+      // Captured from the updater rather than from the render closure, so this
+      // callback does not need `settings` in its dependencies — with it, every
+      // saved preference produced a new `update`, hence a new context value,
+      // hence a re-render of every consumer under this provider.
+      let previous = DEFAULT_SETTINGS;
+      setSettings((current) => {
+        previous = current;
+        return { ...current, ...patch };
+      });
 
       if (!isAuthenticated) return;
 
@@ -119,11 +127,16 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
         throw error;
       }
     },
-    [isAuthenticated, settings],
+    [isAuthenticated],
+  );
+
+  const value = useMemo(
+    () => ({ settings, update, isLoading }),
+    [settings, update, isLoading],
   );
 
   return (
-    <PreferencesContext.Provider value={{ settings, update, isLoading }}>
+    <PreferencesContext.Provider value={value}>
       {children}
     </PreferencesContext.Provider>
   );

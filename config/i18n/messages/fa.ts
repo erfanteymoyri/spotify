@@ -150,6 +150,34 @@ export const messages: Messages = {
     deleteConfirmBody:
       "این عمل غیرقابل بازگشت است و تمام داده‌های حساب شما حذف خواهد شد. آیا مطمئن هستید؟",
     deleteConfirmAction: "بله، حذف کن",
+
+    playback: "پخش",
+    crossfade: "تداخل آهنگ‌ها",
+    crossfadeHint:
+      "به‌جای قطع ناگهانی، انتهای هر آهنگ با ابتدای آهنگ بعدی ادغام می‌شود.",
+    crossfadeDuration: "مدت ادغام",
+    seconds: "{count} ثانیه",
+    streamQuality: "کیفیت پخش",
+    streamQualityHint:
+      "برای آهنگ‌هایی که برای پخش تطبیقی آماده شده‌اند. حالت خودکار بر اساس سرعت اینترنت شما تنظیم می‌شود.",
+    quality: {
+      auto: "خودکار",
+      low: "پایین — ۶۴ کیلوبیت (کم‌مصرف)",
+      standard: "متوسط — ۱۲۸ کیلوبیت",
+      high: "بالا — ۳۲۰ کیلوبیت",
+    },
+
+    themeColor: "رنگ پس‌زمینه و ویجت‌ها",
+    themeColorHint:
+      "هم پس‌زمینه و هم همهٔ عناصر فعال پخش‌کننده (نوار پیشرفت، دکمهٔ پخش و تاگل‌ها) را تعیین می‌کند.",
+    themeAuto: "پیش‌فرض (خودکار)",
+    themeAutoHint: "هماهنگ با رنگ غالب کاور آهنگ در حال پخش.",
+    themeManual: "انتخاب دستی",
+    themeManualHint: "یک رنگ ثابت انتخاب کنید.",
+    themePreview: "پیش‌نمایش",
+    previewBackground: "پس‌زمینه",
+    previewSurface: "سطح",
+    previewAccent: "رنگ اصلی",
   },
   notifications: {
     title: "اعلان‌ها",
@@ -168,6 +196,11 @@ export const messages: Messages = {
     queueEmpty: "آهنگی در صف پخش نیست",
     nowPlaying: "در حال پخش",
     removeFromQueue: "حذف از صف",
+    quality: "کیفیت پخش",
+    qualityAuto: "خودکار",
+    crossfade: "تداخل آهنگ‌ها",
+    crossfadeOn: "تداخل روشن — {seconds} ثانیه",
+    crossfadeOff: "تداخل خاموش",
   },
   auth: {
     loginTitle: "ورود به حساب کاربری",

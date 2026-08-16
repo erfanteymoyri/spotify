@@ -148,6 +148,34 @@ export const messages = {
     deleteConfirmBody:
       "This action is irreversible and all your account data will be removed. Are you sure?",
     deleteConfirmAction: "Yes, delete it",
+
+    playback: "Playback",
+    crossfade: "Crossfade",
+    crossfadeHint:
+      "Blend the end of each track into the start of the next one instead of cutting between them.",
+    crossfadeDuration: "Blend length",
+    seconds: "{count} s",
+    streamQuality: "Streaming quality",
+    streamQualityHint:
+      "Applies to tracks that have been packaged for adaptive streaming. Automatic follows your connection.",
+    quality: {
+      auto: "Automatic",
+      low: "Low — 64 kbps (data saver)",
+      standard: "Standard — 128 kbps",
+      high: "High — 320 kbps",
+    },
+
+    themeColor: "Accent colour",
+    themeColorHint:
+      "Sets the background and every active control — the progress bar, the play button, the toggles.",
+    themeAuto: "Automatic",
+    themeAutoHint: "Follow the dominant colour of the cover that is playing.",
+    themeManual: "Custom",
+    themeManualHint: "Pick one colour and keep it.",
+    themePreview: "Preview",
+    previewBackground: "Background",
+    previewSurface: "Surface",
+    previewAccent: "Accent",
   },
   notifications: {
     title: "Notifications",
@@ -166,6 +194,11 @@ export const messages = {
     queueEmpty: "No tracks in the queue",
     nowPlaying: "Now playing",
     removeFromQueue: "Remove from queue",
+    quality: "Streaming quality",
+    qualityAuto: "Automatic",
+    crossfade: "Crossfade",
+    crossfadeOn: "Crossfade on — {seconds} s",
+    crossfadeOff: "Crossfade off",
   },
   auth: {
     loginTitle: "Log in to your account",

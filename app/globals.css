@@ -129,19 +129,33 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Soft brand-tinted glow in opposite corners */
+    /*
+     * Soft brand-tinted glow in opposite corners.
+     *
+     * Drawn in `--cover-accent`, which DynamicThemeProvider sets to the colour
+     * pulled off the artwork *unmodified*. Every other variable is
+     * lightness-corrected so text keeps its contrast; this is the one place the
+     * real colour of the sleeve shows through. It falls back to `--primary`,
+     * so with no dynamic theme the gradient is exactly what it always was.
+     */
     background-image:
       radial-gradient(
         ellipse 70% 45% at 15% -10%,
-        color-mix(in oklch, var(--primary) 9%, transparent),
+        color-mix(in oklch, var(--cover-accent, var(--primary)) 12%, transparent),
         transparent
       ),
       radial-gradient(
         ellipse 55% 40% at 90% 110%,
-        color-mix(in oklch, var(--primary) 6%, transparent),
+        color-mix(in oklch, var(--cover-accent, var(--primary)) 8%, transparent),
         transparent
       );
     background-attachment: fixed;
+    /* The palette can change mid-song, when the queue advances to a cover with
+       a different dominant colour. Easing that keeps it a mood change rather
+       than a flash. */
+    transition:
+      background-color 600ms ease,
+      background-image 600ms ease;
   }
   html {
     @apply font-sans;

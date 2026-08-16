@@ -52,6 +52,35 @@ export interface ArtistProfile {
   sampleWorks?: string;
 }
 
+/** Rungs of the server's bitrate ladder (`transcoding.enums.AudioQuality`). */
+export type AudioQuality = "low" | "standard" | "high";
+
+/** What the listener picked in the quality menu; `auto` lets hls.js adapt. */
+export type QualityPreference = "auto" | AudioQuality;
+
+export type TranscodeStatus = "pending" | "processing" | "ready" | "failed";
+
+export interface HlsRendition {
+  quality: AudioQuality;
+  /** Server-supplied, e.g. "320 kbps" — also the `NAME` in the playlist. */
+  label: string;
+  bitrateKbps: number;
+  /** This variant's media playlist. */
+  url: string;
+}
+
+/**
+ * A track's adaptive-streaming package.
+ *
+ * `masterUrl` is null unless `status` is `ready`, so one null check decides
+ * whether the player can use HLS at all — no status comparison to get wrong.
+ */
+export interface HlsStream {
+  status: TranscodeStatus;
+  masterUrl: string | null;
+  renditions: HlsRendition[];
+}
+
 export interface Track {
   id: string;
   title: string;
@@ -60,7 +89,10 @@ export interface Track {
   albumId: string | null;
   albumName: string | null;
   coverUrl: string;
+  /** The original upload. Always playable, and the fallback when HLS is not. */
   audioUrl: string;
+  /** Null for a track that was never packaged (older uploads, or a failure). */
+  hls: HlsStream | null;
   duration: number;
   lyrics?: string | null;
   genre?: string;
@@ -152,6 +184,19 @@ export interface UserSettings {
   notificationsEnabled: boolean;
   volume: number;
   language: "fa" | "en";
+  /** Blend the tail of each track into the head of the next one. */
+  crossfadeEnabled: boolean;
+  /** Length of that blend. The product default is 5. */
+  crossfadeSeconds: number;
+  preferredQuality: QualityPreference;
+  /**
+   * Manual theme colour as `#rrggbb`.
+   *
+   * An empty string is the "Auto" mode: the palette is derived from the
+   * dominant colour of the artwork on screen. Storing the absence of a choice
+   * rather than a separate boolean keeps the two from contradicting each other.
+   */
+  backgroundColor: string;
 }
 
 export interface PaginatedResponse<T> {

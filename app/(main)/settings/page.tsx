@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LanguageToggle } from "@/components/shared/language-toggle";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { FadeIn } from "@/components/shared/motion";
 import { SectionHeader } from "@/components/shared/section-header";
+import { PlaybackSettings } from "@/components/settings/playback-settings";
+import { ThemeColorSettings } from "@/components/settings/theme-color-settings";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Checkbox } from "@/ui/checkbox";
@@ -14,8 +16,9 @@ import { Dialog } from "@/ui/dialog";
 import { Slider } from "@/ui/slider";
 import { routes } from "@/config/site";
 import { useTranslation } from "@/hooks/use-translation";
-import { settingsService, userService } from "@/services/user.service";
+import { userService } from "@/services/user.service";
 import { usePlans } from "@/providers/plans-provider";
+import { usePreferences } from "@/providers/preferences-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
 import type { UserSettings } from "@/types";
@@ -25,22 +28,20 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const [settings, setSettings] = useState<UserSettings | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Preferences are fetched once by the provider and shared with the player
+  // bar, so this page reads the same state the running player does.
+  const { settings, isLoading, update: savePreference } = usePreferences();
 
   // Names and limits come straight from the API, so an administrator's change
   // is reflected here with no code edit (spec 2.11.3).
   const { planFor } = usePlans();
   const currentPlan = planFor(user?.subscription ?? "free");
 
-  useEffect(() => {
-    settingsService.getSettings().then(setSettings);
-  }, []);
-
   const update = async (patch: Partial<UserSettings>) => {
-    const updated = await settingsService.updateSettings(patch);
-    setSettings(updated);
+    await savePreference(patch);
     // Keep the live player in sync with the system volume setting
     if (patch.volume !== undefined) {
       usePlayerStore.getState().setVolume(patch.volume);
@@ -59,7 +60,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (!settings) {
+  if (isLoading) {
     return (
       <p className="py-20 text-center text-muted-foreground">
         {t("common.loading")}
@@ -95,9 +96,14 @@ export default function SettingsPage() {
         />
       </section>
 
+      <PlaybackSettings />
+
       <section className="space-y-4 rounded-xl bg-card/40 p-6">
         <ThemeToggle />
       </section>
+
+      {/* Light/dark is the mode; this is the colour worn in whichever mode. */}
+      <ThemeColorSettings />
 
       <section className="space-y-4 rounded-xl bg-card/40 p-6">
         <LanguageToggle />

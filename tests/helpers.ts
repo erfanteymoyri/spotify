@@ -11,6 +11,9 @@ export function makeTrack(id: string, overrides: Partial<Track> = {}): Track {
     albumName: null,
     coverUrl: "/cover.jpg",
     audioUrl: `/audio/${id}.mp3`,
+    // Unpackaged by default, so a test opts into HLS explicitly rather than
+    // getting it by accident.
+    hls: null,
     duration: 200,
     publishedAt: "2025-01-01T00:00:00Z",
     isEarlyAccess: false,

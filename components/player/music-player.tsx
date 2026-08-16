@@ -21,6 +21,8 @@ import {
   Radio,
   X,
 } from "lucide-react";
+import { CrossfadeToggle } from "@/components/player/crossfade-toggle";
+import { QualityMenu } from "@/components/player/quality-menu";
 import { QueuePanel } from "@/components/player/queue-panel";
 import { useTranslation } from "@/hooks/use-translation";
 import { routes } from "@/config/site";
@@ -191,6 +193,13 @@ export function MusicPlayer() {
               </div>
 
               <PlayerControls className="w-full max-w-xl" {...controlProps} expanded />
+
+              {/* Stream quality and crossfade sit with the transport here,
+                  where there is room to label them. */}
+              <div className="flex items-center gap-1">
+                <QualityMenu />
+                <CrossfadeToggle />
+              </div>
             </div>
           </motion.div>
         )}
@@ -297,6 +306,11 @@ export function MusicPlayer() {
                   <Button variant="ghost" size="icon-sm" onClick={handleNext}>
                     <SkipForward className="size-4 fill-current" />
                   </Button>
+                </div>
+                {/* Both hide on the narrowest bar, where the transport wins */}
+                <div className="hidden items-center sm:flex">
+                  <QualityMenu />
+                  <CrossfadeToggle />
                 </div>
                 <Button
                   variant="ghost"

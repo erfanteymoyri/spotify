@@ -139,6 +139,8 @@ export const endpoints = {
     tracks: "/artist/tracks",
     /** PATCH | DELETE */
     trackById: (id: string) => `/artist/tracks/${id}`,
+    /** POST — rebuild this work's HLS renditions after a failed transcode */
+    trackTranscode: (id: string) => `/artist/tracks/${id}/transcode`,
     /** GET — lifetime studio totals */
     analytics: "/artist/analytics",
     /** GET — my monthly payout statements */

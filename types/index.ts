@@ -291,6 +291,12 @@ export interface Payment {
   amount: number;
   currency: string;
   status: PaymentStatus;
+  /** The bank's reference number — the receipt shown after a successful payment. */
+  trackingNumber: string;
+  /** Masked by the gateway (6219-****-****-1234); no full card number exists here. */
+  cardNumber: string;
+  bank: string;
+  /** Diagnostic detail for support. The user-facing sentence is chosen client-side. */
   failureReason: string;
   createdAt: string;
   settledAt: string | null;

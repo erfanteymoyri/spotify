@@ -1,21 +1,18 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Minus } from "lucide-react";
 import { BillingPeriodPicker } from "@/components/subscription/billing-period-picker";
 import { FadeIn } from "@/components/shared/motion";
 import { SectionHeader } from "@/components/shared/section-header";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
-import { routes } from "@/config/site";
 import { formatLimit, isUpgrade } from "@/config/subscription";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatNumber } from "@/lib/format";
 import { parseApiError } from "@/lib/parse-api-error";
 import { toast } from "@/lib/toast";
 import { usePlans } from "@/providers/plans-provider";
-import { authService } from "@/services/auth.service";
 import {
   subscriptionService,
   type CurrentSubscription,
@@ -27,31 +24,16 @@ import { cn } from "@/lib/utils";
 type PaidTier = Exclude<SubscriptionTier, "free">;
 
 /**
- * `useSearchParams` opts its subtree into client-side rendering, so the body
- * lives behind a Suspense boundary — same shape as the settings page.
+ * The pricing page: pick a duration, pick a tier, go to the gateway.
+ *
+ * The return trip is not handled here — the gateway sends the browser to the
+ * backend, which confirms the transaction and forwards to
+ * `/subscription/callback`. This page's only job in the purchase is starting it.
  */
 export default function SubscriptionPage() {
   const { t } = useTranslation();
-  return (
-    <Suspense
-      fallback={
-        <p className="py-20 text-center text-muted-foreground">
-          {t("common.loading")}
-        </p>
-      }
-    >
-      <SubscriptionContent />
-    </Suspense>
-  );
-}
-
-function SubscriptionContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { t } = useTranslation();
   const { plans } = usePlans();
   const user = useAuthStore((s) => s.user);
-  const updateUser = useAuthStore((s) => s.updateUser);
 
   const [options, setOptions] = useState<BillingOption[]>([]);
   const [months, setMonths] = useState(1);
@@ -73,35 +55,6 @@ function SubscriptionContent() {
   useEffect(() => {
     subscriptionService.getMySubscription().then(setCurrent).catch(() => {});
   }, []);
-
-  /**
-   * The gateway returns the browser here with `?payment=<id>&status=<state>`.
-   * Re-reading the user picks up the new tier, granted server-side while we
-   * were away.
-   *
-   * The ref makes this fire exactly once per return trip: `router.replace`
-   * only clears the query string on a later tick, so a re-render in between
-   * would otherwise announce the same payment twice.
-   */
-  const paymentHandledRef = useRef(false);
-
-  useEffect(() => {
-    const status = searchParams.get("status");
-    if (!status || paymentHandledRef.current) return;
-    paymentHandledRef.current = true;
-
-    if (status === "succeeded") {
-      authService
-        .getMe()
-        .then(updateUser)
-        .then(() => subscriptionService.getMySubscription().then(setCurrent))
-        .then(() => toast.success(t("subscription.paymentSucceeded")))
-        .catch(() => toast.error(t("subscription.paymentFailed")));
-    } else {
-      toast.error(t("subscription.paymentFailed"));
-    }
-    router.replace(routes.subscription);
-  }, [searchParams, router, updateUser, t]);
 
   const selectedOption = useMemo(
     () => options.find((option) => option.months === months) ?? null,

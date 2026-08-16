@@ -12,6 +12,8 @@ export const routes = {
   library: "/library",
   settings: "/settings",
   subscription: "/subscription",
+  /** Where the payment gateway's callback hands the browser back. */
+  subscriptionCallback: "/subscription/callback",
   support: "/support",
   notifications: "/notifications",
   artistDashboard: "/artist/dashboard",

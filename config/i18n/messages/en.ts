@@ -340,8 +340,31 @@ export const messages = {
     gold: "Gold",
     toman: "Toman",
     checkoutFailed: "Could not start the payment process",
-    paymentSucceeded: "Payment succeeded — your subscription is now active.",
-    paymentFailed: "The payment did not go through. Your plan is unchanged.",
+
+    // --- Payment gateway result page ---
+    verifying: "Checking the status of your payment...",
+    successTitle: "Payment successful",
+    successMessage: "Your subscription is active and ready to use right away.",
+    failureTitle: "Payment was not completed",
+    reasonCancelled:
+      "The payment was cancelled or declined by the bank. Nothing was charged.",
+    reasonUnverified:
+      "The gateway did not confirm your transaction, so your plan is unchanged. If you were charged, please contact support.",
+    reasonNotFound:
+      "We could not find that transaction. If you were charged, please contact support.",
+    reasonUnknown: "Something went wrong with the payment. Please try again.",
+    pendingTitle: "Payment is being checked",
+    pendingMessage:
+      "We could not reach the payment gateway, so this transaction is not confirmed yet. Please do not pay again — if it is confirmed, your subscription will activate automatically.",
+    retry: "Try again",
+    goHome: "Go to home",
+    backHome: "Back to home",
+    redirectingIn: "Redirecting you to the home page in {seconds} seconds",
+    trackingNumber: "Tracking number",
+    transactionId: "Transaction ID",
+    amountPaid: "Amount paid",
+    cardNumber: "Card number",
+    bank: "Bank",
     title: "Subscription plans",
     subtitle: "Pick a plan, then choose how long you want to commit for.",
     duration: "Billing period",

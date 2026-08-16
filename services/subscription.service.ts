@@ -17,7 +17,7 @@ export interface CurrentSubscription {
 
 export interface CheckoutResponse {
   payment: Payment;
-  /** Where to send the browser to complete the transaction. */
+  /** The gateway's hosted payment page for this transaction. */
   paymentUrl: string;
 }
 
@@ -67,7 +67,14 @@ export const subscriptionService = {
     });
   },
 
-  /** Opens a pending transaction; nothing is granted until it settles. */
+  /**
+   * Opens a transaction with the payment gateway.
+   *
+   * Note what is *not* sent: a price. The server reads it from the plan and the
+   * duration, so the amount charged is never something the browser chose.
+   * Nothing is granted until the gateway confirms the transaction on the
+   * callback.
+   */
   startCheckout(
     tier: Exclude<SubscriptionTier, "free">,
     durationMonths: BillingPeriod,
@@ -78,7 +85,11 @@ export const subscriptionService = {
     });
   },
 
-  /** Polled after returning from the gateway. */
+  /**
+   * The authoritative record of a transaction, read after returning from the
+   * gateway. Scoped to the caller server-side, so a payment id reveals nothing
+   * about anyone else's transaction.
+   */
   getPayment(id: string): Promise<Payment> {
     return apiClient<Payment>(endpoints.payments.byId(id), { method: "GET" });
   },

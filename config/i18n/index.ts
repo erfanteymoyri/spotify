@@ -26,7 +26,10 @@ export function translate(
   let text = getNestedValue(catalogs[locale], key);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      text = text.replace(`{${k}}`, String(v));
+      // Every occurrence, not just the first: a sentence may naturally name
+      // the same value twice, and a half-substituted string leaves a literal
+      // `{name}` on screen.
+      text = text.split(`{${k}}`).join(String(v));
     }
   }
   return text;

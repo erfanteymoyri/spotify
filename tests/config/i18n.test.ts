@@ -12,6 +12,18 @@ describe("translate", () => {
     expect(out).toBe("3 of 6 playlists");
   });
 
+  it("interpolates a param named more than once in the sentence", () => {
+    // The plan-switch warning names the plan twice; substituting only the
+    // first left a literal "{currentPlan}" in the middle of the toast.
+    const out = translate("en", "subscription.switchWarningMessage", {
+      currentPlan: "Gold",
+      days: 42,
+    });
+
+    expect(out).not.toContain("{");
+    expect(out.match(/Gold/g)).toHaveLength(2);
+  });
+
   it("returns the key itself for a missing path (safe fallback)", () => {
     expect(translate("en", "does.not.exist")).toBe("does.not.exist");
   });

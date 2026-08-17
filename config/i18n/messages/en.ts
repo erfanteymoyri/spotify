@@ -184,6 +184,16 @@ export const messages = {
     emptyDescription: "When something happens, it will show up here.",
     markRead: "Mark as read",
   },
+  pwa: {
+    install: "Install app",
+  },
+  offline: {
+    title: "You are offline",
+    description:
+      "This page needs a connection. Check your internet and try again — anything already loaded stays available.",
+    restored: "You are back online. Reload to continue.",
+    retry: "Try again",
+  },
   player: {
     selectTrack: "Select a track to start playing",
     playAlbum: "Play album",

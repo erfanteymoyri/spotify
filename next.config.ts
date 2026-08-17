@@ -46,6 +46,34 @@ const nextConfig: NextConfig = {
     // bloating the bundle and slowing first paint/hydration.
     optimizePackageImports: ["radix-ui", "motion"],
   },
+  async headers() {
+    return [
+      {
+        // The worker must never be answered from a cache. It is the one file
+        // whose staleness is self-perpetuating: an old worker keeps serving its
+        // own old caches, and nothing else can correct it. `updateViaCache:
+        // "none"` at registration covers the browser's own worker cache; this
+        // covers every proxy and CDN in between.
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          {
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8",
+          },
+          // A worker can intercept every request on its scope, so it is worth
+          // stating that this one may only ever be same-origin script.
+          {
+            key: "Content-Security-Policy",
+            value: "default-src 'self'; script-src 'self'",
+          },
+        ],
+      },
+    ];
+  },
   images: {
     unoptimized: mediaIsLocal,
     remotePatterns: [

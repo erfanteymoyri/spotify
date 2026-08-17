@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { LogOut } from "lucide-react";
+import { InstallButton } from "@/components/pwa/install-button";
 import { Avatar } from "@/ui/avatar";
 import { Button } from "@/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -39,6 +40,8 @@ export function TopBar() {
         </div>
       </div>
       <div className="flex items-center gap-2">
+        {/* Only renders where the browser has offered us an install prompt. */}
+        <InstallButton />
         <Link
           href={routes.profile}
           className="flex items-center gap-3 rounded-full bg-card/60 py-1.5 ps-1.5 pe-4 transition-colors hover:bg-card"

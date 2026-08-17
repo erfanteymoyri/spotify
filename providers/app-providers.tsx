@@ -3,6 +3,7 @@
 import { AuthProvider } from "@/contexts/auth-context";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
 import { LocaleSync } from "@/components/layout/locale-sync";
+import { ServiceWorkerRegistrar } from "@/components/pwa/service-worker-registrar";
 import { DynamicThemeProvider } from "@/providers/dynamic-theme-provider";
 import { PlansProvider } from "@/providers/plans-provider";
 import { PreferencesProvider } from "@/providers/preferences-provider";
@@ -17,6 +18,9 @@ function AudioPlayerInit() {
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
+      {/* Outside every data provider: it registers the worker and depends on
+          nothing, so it must not be gated behind a session or a fetch. */}
+      <ServiceWorkerRegistrar />
       <AuthProvider>
         {/* Subscription plans are fetched once and shared: they gate features
             on nearly every screen but change only when an admin edits them. */}

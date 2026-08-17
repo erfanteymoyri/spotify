@@ -6,6 +6,17 @@
  * "active"; a handover starts N seconds before the active deck ends, runs both
  * for those N seconds, and finishes by swapping which deck is active.
  *
+ * A handover has three phases, and the reason for the first is the whole
+ * difference between a crossfade and a cut:
+ *
+ * 1. **loading** — from ~15 s out, the next track is fetched onto the idle
+ *    deck and buffered, silent and paused. Loading is unbounded; five seconds
+ *    of music is not, so it cannot be done inside the window.
+ * 2. **armed** — buffered and ready to make sound on the first frame of the
+ *    blend, still silent.
+ * 3. **fading** — the last N seconds: both decks play and their envelopes are
+ *    ramped past each other on a 40 ms timer.
+ *
  * Everything here is plain TypeScript with no React in sight. The engine
  * announces what happened through callbacks and never touches the store
  * itself, which is what makes the handover logic testable without a DOM
@@ -48,11 +59,21 @@ export interface EngineCallbacks {
   peekNext(): EngineTrack | null;
 }
 
+/**
+ * Where a handover has got to.
+ *
+ * The distinction that matters is `armed` versus `fading`: the incoming deck is
+ * loaded and buffered well before the blend is due, and only *then* does it
+ * start playing and the envelopes start moving. Without that split the fade
+ * could not last its full length — the incoming track would still be fetching
+ * its first segment while the window it was supposed to fade in over ran out.
+ */
+type HandoverPhase = "loading" | "armed" | "fading";
+
 interface Handover {
   /** The track loaded onto the incoming deck. */
   track: EngineTrack;
-  /** Guards against starting a second handover while the first is loading. */
-  loading: boolean;
+  phase: HandoverPhase;
 }
 
 /**
@@ -62,12 +83,36 @@ interface Handover {
  */
 const MIN_TRACK_LENGTH_FACTOR = 1.5;
 
+/**
+ * Extra runway, in seconds, for buffering the incoming track before the blend
+ * is due to start.
+ *
+ * Generous on purpose. Loading late costs the listener an audible chunk of the
+ * fade; loading early costs one HTTP request a few seconds sooner than it would
+ * have been made anyway.
+ */
+const PRELOAD_LEAD_SECONDS = 10;
+
+/**
+ * How often the envelopes are recomputed while blending.
+ *
+ * `timeupdate` alone fires about four times a second, which turns a five-second
+ * fade into twenty audible steps — on a sustained note that is a staircase, not
+ * a fade. A timer of our own runs the ramp; every tick still derives its
+ * position from the outgoing deck's clock, so a throttled tab (where the timer
+ * slows to 1 Hz) degrades to a coarser fade rather than a desynchronised one.
+ */
+const FADE_TICK_MS = 40;
+
 export class PlaybackEngine {
   private readonly decks: [Deck, Deck];
   private activeIndex: 0 | 1 = 0;
 
   private handover: Handover | null = null;
   private crossfade: CrossfadeConfig = { enabled: false, seconds: 5 };
+
+  /** Drives the envelope ramp while a blend is running. */
+  private fadeTimer: ReturnType<typeof setInterval> | null = null;
 
   private volume = 1;
   private wantsToPlay = false;
@@ -137,7 +182,10 @@ export class PlaybackEngine {
   play(): void {
     this.wantsToPlay = true;
     void this.active.play();
-    if (this.handover) void this.idle.play();
+    // Only once the blend is actually running. A deck that is merely armed is
+    // holding the next track buffered and silent, and starting it here would
+    // play it under the current one for as long as the preload lead lasts.
+    if (this.handover?.phase === "fading") void this.idle.play();
   }
 
   pause(): void {
@@ -177,26 +225,35 @@ export class PlaybackEngine {
   }
 
   destroy(): void {
+    this.stopFadeTimer();
     for (const deck of this.decks) deck.destroy();
   }
 
   // -- the tick ----------------------------------------------------------
 
   /**
-   * Driven by the element's own `timeupdate` (~4 Hz while playing) rather than
-   * by a timer of our own. It stops when playback stops, needs no cleanup, and
-   * -- unlike `requestAnimationFrame` -- keeps firing in a background tab,
-   * where a frame-driven fade would freeze half-done with both decks audible.
+   * Driven by the element's own `timeupdate` (~4 Hz while playing).
+   *
+   * This is what *decides* things -- when to buffer the next track, when the
+   * blend is due -- because it stops when playback stops and needs no cleanup.
+   * The blend's envelope ramp is too fine-grained for 4 Hz and runs on its own
+   * timer (`beginFade`); this stays its backstop, so a ramp throttled by a
+   * background tab still gets corrected against the authoritative clock.
    */
   private handleTime(deck: Deck): void {
     if (deck !== this.active) return;
 
     this.callbacks.onProgress(deck.currentTime, deck.duration);
 
-    if (this.handover) {
+    if (!this.handover) {
+      if (this.shouldPrepareHandover()) void this.prepareHandover();
+    } else if (this.shouldBeginFade()) {
+      this.beginFade();
+    } else {
+      // A safety net for the ramp timer, not the ramp itself: if the timer is
+      // throttled or the fade began late, this keeps the envelopes tracking
+      // the outgoing clock.
       this.applyFade();
-    } else if (this.shouldStartHandover()) {
-      void this.startHandover();
     }
   }
 
@@ -229,7 +286,8 @@ export class PlaybackEngine {
 
   // -- crossfade ---------------------------------------------------------
 
-  private shouldStartHandover(): boolean {
+  /** Whether the incoming track should start buffering now. */
+  private shouldPrepareHandover(): boolean {
     const { enabled, seconds } = this.crossfade;
     if (!enabled || seconds <= 0) return false;
 
@@ -239,7 +297,7 @@ export class PlaybackEngine {
     const { duration, remaining } = deck;
     // `remaining` is Infinity until metadata lands, which keeps this false.
     if (duration <= seconds * MIN_TRACK_LENGTH_FACTOR) return false;
-    if (remaining > seconds) return false;
+    if (remaining > seconds + PRELOAD_LEAD_SECONDS) return false;
     // Already essentially over: let `ended` handle it, so the incoming track
     // is not started for a fade there is no time left to perform.
     if (remaining <= 0.15) return false;
@@ -247,24 +305,69 @@ export class PlaybackEngine {
     return true;
   }
 
-  private async startHandover(): Promise<void> {
+  /** Whether the blend itself is due to begin. */
+  private shouldBeginFade(): boolean {
+    return (
+      this.handover?.phase === "armed" &&
+      this.active.remaining <= this.crossfade.seconds
+    );
+  }
+
+  /**
+   * Load the next track onto the idle deck and hold it, silent and paused, at
+   * the ready.
+   *
+   * Nothing is audible at the end of this: the deck sits buffered with its
+   * envelope at zero until `beginFade` starts it. Separating the two is what
+   * makes the fade last the whole window — buffering is unbounded in a way
+   * five seconds of music is not.
+   */
+  private async prepareHandover(): Promise<void> {
     const next = this.callbacks.peekNext();
     if (!next || next.id === this.active.trackId) return;
 
-    this.handover = { track: next, loading: true };
+    this.handover = { track: next, phase: "loading" };
 
     const incoming = this.idle;
     incoming.stop();
     incoming.setEnvelope(0);
     incoming.setVolume(this.volume);
+
     await incoming.load(toSource(next));
-
     // The listener may have skipped, paused or seeked while that resolved.
-    if (!this.handover || this.handover.track.id !== next.id) return;
-    this.handover.loading = false;
+    if (this.handover?.track.id !== next.id) return;
 
-    if (this.wantsToPlay) await incoming.play();
+    await incoming.whenReady();
+    if (this.handover?.track.id !== next.id) return;
+
+    this.handover.phase = "armed";
+    // Buffering may have run past the start of the window; begin at once
+    // rather than idling until the next tick.
+    if (this.shouldBeginFade()) this.beginFade();
+  }
+
+  /**
+   * Start the blend: bring the incoming deck in and run the envelope ramp.
+   *
+   * The ramp gets its own timer rather than riding on `timeupdate`, whose
+   * ~4 Hz cadence is coarse enough to hear as steps across a five-second fade.
+   */
+  private beginFade(): void {
+    if (!this.handover || this.handover.phase === "fading") return;
+    this.handover.phase = "fading";
+
+    const incoming = this.idle;
+    incoming.setEnvelope(0);
+    if (this.wantsToPlay) void incoming.play();
+
+    this.fadeTimer ??= setInterval(() => this.applyFade(), FADE_TICK_MS);
     this.applyFade();
+  }
+
+  private stopFadeTimer(): void {
+    if (this.fadeTimer === null) return;
+    clearInterval(this.fadeTimer);
+    this.fadeTimer = null;
   }
 
   /**
@@ -274,19 +377,21 @@ export class PlaybackEngine {
    * ourselves, so a throttled tab, a slow load or a dropped tick can never
    * leave the two gains out of step -- each tick recomputes the whole envelope
    * from the one thing that is authoritative, how much of the track is left.
+   * It also means a pause freezes the blend where it stands, because the
+   * outgoing clock stops with it.
    *
    * The curve is equal-power (cos/sin) rather than linear. Two uncorrelated
    * signals sum in power, not amplitude, so a linear pair dips audibly in the
    * middle where both sit at 0.5; `cos² + sin² = 1` holds the loudness flat.
    */
   private applyFade(): void {
-    if (!this.handover) return;
+    if (this.handover?.phase !== "fading") return;
 
     const progress = fadeProgress(this.active.remaining, this.crossfade.seconds);
     const { outgoing, incoming } = equalPowerGains(progress);
 
     this.active.setEnvelope(outgoing);
-    if (!this.handover.loading) this.idle.setEnvelope(incoming);
+    this.idle.setEnvelope(incoming);
 
     if (progress >= 1) this.completeHandover();
   }
@@ -295,6 +400,7 @@ export class PlaybackEngine {
     const handover = this.handover;
     if (!handover) return;
     this.handover = null;
+    this.stopFadeTimer();
 
     const outgoing = this.active;
     const finishedId = outgoing.trackId;
@@ -303,6 +409,10 @@ export class PlaybackEngine {
     outgoing.stop(); // also restores its envelope to 1 for its next use
     this.activeIndex = this.activeIndex === 0 ? 1 : 0;
     this.active.setEnvelope(1);
+    // The blend may never have started -- a track that ended while its
+    // successor was still buffering, say. The deck is loaded either way, so
+    // playback continues from here rather than stopping on a dead deck.
+    if (this.wantsToPlay && !this.active.isPlaying) void this.active.play();
 
     if (finishedId) this.callbacks.onTrackCompleted(finishedId, playedSeconds);
     // The store now points at the track this deck is already playing, so the
@@ -320,6 +430,7 @@ export class PlaybackEngine {
   private abortHandover(): void {
     if (!this.handover) return;
     this.handover = null;
+    this.stopFadeTimer();
     this.idle.stop();
     this.active.setEnvelope(1);
   }

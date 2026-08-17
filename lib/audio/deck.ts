@@ -14,6 +14,22 @@ import type { ErrorData, Level, ManifestParsedData } from "hls.js";
 /** Auto is not a level index; hls.js spells it `-1`. */
 export const AUTO_LEVEL = -1;
 
+/**
+ * `HTMLMediaElement.HAVE_FUTURE_DATA` — enough buffered to start playing at
+ * once. Spelt out because the constant only exists on an element instance, and
+ * `readyState` is compared before there is necessarily one to hand.
+ */
+const HAVE_FUTURE_DATA = 3;
+
+/**
+ * How long to wait for a deck to buffer before giving up on it.
+ *
+ * Only a backstop: the caller starts loading well before the audio is needed,
+ * and a deck that is still empty after this has a problem no amount of further
+ * waiting fixes.
+ */
+const READY_TIMEOUT_MS = 15_000;
+
 export interface DeckSource {
   trackId: string;
   /** Master playlist. Null when the track has no package (yet, or ever). */
@@ -206,6 +222,34 @@ export class Deck {
     // Put the listener back where they were rather than restarting the track.
     this.element.currentTime = resumeAt;
     if (wasPlaying) void this.play();
+  }
+
+  /**
+   * Resolve once this deck could start playing without stalling.
+   *
+   * What makes a crossfade a fade rather than a cut: the incoming track has to
+   * be buffered *before* the blend starts, so that `play()` produces sound on
+   * the first frame of the fade instead of a second or two into it. Awaiting
+   * `load()` is not enough — that only means a source was attached; hls.js in
+   * particular has not fetched a single segment by then.
+   *
+   * Resolves rather than rejects on error or timeout: the caller's fallback is
+   * to carry on without a blend, and there is nothing here to handle.
+   */
+  whenReady(): Promise<void> {
+    if (this.element.readyState >= HAVE_FUTURE_DATA) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      const settle = () => {
+        clearTimeout(timer);
+        this.element.removeEventListener("canplay", settle);
+        this.element.removeEventListener("error", settle);
+        resolve();
+      };
+      const timer = setTimeout(settle, READY_TIMEOUT_MS);
+      this.element.addEventListener("canplay", settle);
+      this.element.addEventListener("error", settle);
+    });
   }
 
   // -- transport ---------------------------------------------------------

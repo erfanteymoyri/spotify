@@ -11,7 +11,7 @@ import { formatLimit, isUpgrade } from "@/config/subscription";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatNumber } from "@/lib/format";
 import { parseApiError } from "@/lib/parse-api-error";
-import { toast } from "@/lib/toast";
+import { confirmToast, toast } from "@/lib/toast";
 import { usePlans } from "@/providers/plans-provider";
 import {
   subscriptionService,
@@ -61,11 +61,13 @@ export default function SubscriptionPage() {
     [options, months],
   );
 
-  const currentTier: SubscriptionTier = user?.subscription ?? "free";
+  // `current` is the authoritative answer (it is read from the subscription
+  // endpoint); the cached user is the fallback for the first paint.
+  const currentTier: SubscriptionTier =
+    current?.tier ?? user?.subscription ?? "free";
 
   /** Opens a transaction; nothing is granted until the gateway confirms. */
-  const purchase = async (tier: PaidTier) => {
-    if (purchasing) return;
+  const checkout = async (tier: PaidTier) => {
     setPurchasing(tier);
     try {
       const { paymentUrl } = await subscriptionService.startCheckout(
@@ -77,6 +79,38 @@ export default function SubscriptionPage() {
       toast.error(parseApiError(err, t("subscription.checkoutFailed")));
       setPurchasing(null);
     }
+  };
+
+  /**
+   * Buying `tier`, warning first when doing so throws paid time away.
+   *
+   * Renewing the current tier is additive — the server adds the months to
+   * whatever is left — so it needs no warning. Moving to a *different* paid
+   * tier is not: the running subscription is cancelled the moment the new one
+   * is granted, and the days left on it are gone. That is a decision the buyer
+   * has to make before the gateway opens, not something to discover afterwards,
+   * so the confirmation is raised here rather than on the way back.
+   */
+  const purchase = (tier: PaidTier) => {
+    if (purchasing) return;
+
+    const replaced = current?.subscription;
+    if (!replaced || currentTier === tier) {
+      void checkout(tier);
+      return;
+    }
+
+    confirmToast({
+      title: t("subscription.switchWarningTitle"),
+      description: t("subscription.switchWarningMessage", {
+        currentPlan: current.plan.name,
+        days: replaced.daysRemaining,
+      }),
+      confirmLabel: t("subscription.switchWarningConfirm"),
+      cancelLabel: t("common.cancel"),
+      destructive: true,
+      onConfirm: () => checkout(tier),
+    });
   };
 
   return (
@@ -155,8 +189,9 @@ function PlanCard({
       : t("subscription.months", { count: months });
 
   // Every paid plan stays buyable whatever the user is on today: re-buying the
-  // current tier queues another period after the one running (no paid days
-  // lost), any other tier takes effect at once. The server owns both cases.
+  // current tier adds the months to the time left on it, any other tier
+  // replaces it outright. The server owns both cases; the button only has to
+  // name the one the listener is about to get.
   const actionLabel = isCurrent
     ? t("subscription.renew")
     : isUpgrade(currentTier, plan.tier)

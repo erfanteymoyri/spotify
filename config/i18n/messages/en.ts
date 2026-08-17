@@ -427,6 +427,10 @@ export const messages = {
     renew: "Renew",
     upgrade: "Upgrade",
     switchPlan: "Switch to this plan",
+    switchWarningTitle: "Your current plan will be removed",
+    switchWarningMessage:
+      "Switching plans replaces your {currentPlan} subscription entirely — the {days} days left on it are not carried over or refunded. Renewing {currentPlan} instead would add the new period to those days.",
+    switchWarningConfirm: "Continue to payment",
     freeForever: "Free forever",
     expiresIn: "{days} days remaining",
     manage: "Manage subscription",

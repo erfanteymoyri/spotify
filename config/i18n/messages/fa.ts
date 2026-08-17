@@ -427,6 +427,10 @@ export const messages: Messages = {
     renew: "تمدید اشتراک",
     upgrade: "ارتقای اشتراک",
     switchPlan: "تغییر به این اشتراک",
+    switchWarningTitle: "اشتراک فعلی شما حذف می‌شود",
+    switchWarningMessage:
+      "با تغییر اشتراک، طرح {currentPlan} شما به‌طور کامل حذف می‌شود و {days} روز باقی‌مانده‌ی آن نه منتقل می‌شود و نه بازگردانده. اگر همان {currentPlan} را تمدید کنید، مدت جدید به این روزها اضافه می‌شود.",
+    switchWarningConfirm: "ادامه و پرداخت",
     freeForever: "همیشه رایگان",
     expiresIn: "{days} روز باقی‌مانده",
     manage: "مدیریت اشتراک",

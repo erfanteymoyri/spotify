@@ -2,14 +2,49 @@
 
 # ---------------------------------------------------------------------------
 # Stage 1 - dependencies. Cached until the lockfile changes.
+#
+# pnpm is pinned and materialised into the image here. `corepack enable` alone
+# only installs shims: with no resolved version on disk, *every* later `pnpm`
+# call asks registry.npmjs.org for the latest stable release first. That turns
+# a flaky or filtered connection to npm into a hard failure — at build time
+# (`pnpm install` exiting 1) and, worse, at container start, where the dev
+# server cannot boot at all. COREPACK_HOME fixes the download location so the
+# later stages can copy this one resolution instead of repeating it.
 # ---------------------------------------------------------------------------
 FROM node:22-alpine AS deps
 
-RUN corepack enable
+ENV COREPACK_HOME=/opt/corepack \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable && corepack prepare pnpm@11.22.0 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
+
+
+# ---------------------------------------------------------------------------
+# Stage used by docker-compose.override.yml (`target: dev`).
+# Source is bind-mounted at runtime; node_modules stays in an anonymous volume.
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS dev
+
+COPY --from=deps /opt/corepack /opt/corepack
+ENV COREPACK_HOME=/opt/corepack \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+WORKDIR /app
+
+ENV NODE_ENV=development \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+EXPOSE 3000
+
+CMD ["pnpm", "dev", "--hostname", "0.0.0.0", "--port", "3000"]
 
 
 # ---------------------------------------------------------------------------
@@ -20,6 +55,9 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 FROM node:22-alpine AS builder
 
+COPY --from=deps /opt/corepack /opt/corepack
+ENV COREPACK_HOME=/opt/corepack \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 WORKDIR /app
 

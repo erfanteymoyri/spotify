@@ -28,7 +28,14 @@ export function BillingPeriodPicker({
     <div
       role="radiogroup"
       aria-label={t("subscription.duration")}
-      className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+      /*
+       * The "best value" badge is positioned outside its card, so the grid has
+       * to reserve the room it occupies — `pt-7` for the top row and a row gap
+       * wide enough for any row below it. Without that the badge is drawn over
+       * whatever happens to sit above the card: previously the section heading,
+       * and on a two-column layout the card in the preceding row.
+       */
+      className="grid grid-cols-2 gap-x-3 gap-y-8 pt-7 sm:grid-cols-4"
     >
       {options.map((option) => {
         const selected = option.months === value;
@@ -47,14 +54,19 @@ export function BillingPeriodPicker({
             )}
           >
             {option.isBestValue && (
+              // Anchored to the card's top edge from the outside (`bottom-full`)
+              // rather than pulled up into it: sitting over the border it
+              // collided with the duration label underneath, and clipped it at
+              // narrow widths. `left`/`-translate-x` rather than the logical
+              // `start`, so the centring survives the RTL layout.
               <Badge
                 variant="success"
-                className="absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-sm"
+                className="absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 shadow-sm"
               >
                 {t("subscription.bestValue")}
               </Badge>
             )}
-            <span className="mt-1 font-semibold">
+            <span className="font-semibold">
               {option.months === 1
                 ? t("subscription.oneMonth")
                 : t("subscription.months", { count: option.months })}
